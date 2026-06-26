@@ -8,26 +8,20 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  background: #0d0d0d;
-  color: #e0e0e0;
-  min-height: 100vh;
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: #0d0d0d; color: #e0e0e0; min-height: 100vh;
   background-image:
     radial-gradient(ellipse at 20% 50%, rgba(255,107,0,0.04) 0%, transparent 50%),
     radial-gradient(ellipse at 80% 50%, rgba(255,107,0,0.03) 0%, transparent 50%),
     repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(255,255,255,0.01) 40px, rgba(255,255,255,0.01) 41px);
 }
-
 .container { max-width: 820px; margin: 0 auto; padding: 32px 20px 60px; }
 
 /* ─── Header ─── */
 .header {
-  display: flex; align-items: center; gap: 16px;
-  margin-bottom: 32px; padding-bottom: 24px;
-  border-bottom: 2px solid #ff6b00;
-  position: relative;
+  display: flex; align-items: center; gap: 16px; margin-bottom: 32px;
+  padding-bottom: 24px; border-bottom: 2px solid #ff6b00; position: relative;
 }
 .header::after {
   content: ''; position: absolute; bottom: -4px; left: 0; right: 0;
@@ -40,39 +34,41 @@ body {
   font-size: 28px; color: #0d0d0d; font-weight: 900;
   box-shadow: 0 0 20px rgba(255,107,0,0.3);
 }
-.header h1 {
-  font-size: 22px; font-weight: 800; color: #fff;
-  letter-spacing: -0.5px; text-transform: uppercase;
-}
+.header h1 { font-size: 22px; font-weight: 800; color: #fff; letter-spacing: -0.5px; text-transform: uppercase; }
 .header h1 span { color: #ff6b00; }
-.header .subtitle {
-  font-size: 12px; color: #888; font-weight: 500;
-  letter-spacing: 1px; text-transform: uppercase;
-  margin-top: 2px;
+.header .subtitle { font-size: 12px; color: #888; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+
+/* ─── Connection indicator ─── */
+.conn-status {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; font-family: 'JetBrains Mono', monospace; padding: 4px 10px;
+  border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px;
 }
+.conn-status.dot { margin-left: auto; }
+.conn-status .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.conn-status.offline { color: #666; border: 1px solid #2a2a2a; }
+.conn-status.offline .dot { background: #555; }
+.conn-status.online { color: #4ade80; border: 1px solid rgba(74,222,128,0.3); }
+.conn-status.online .dot { background: #4ade80; box-shadow: 0 0 6px rgba(74,222,128,0.4); }
+.conn-status.error { color: #f87171; border: 1px solid rgba(248,113,113,0.3); }
+.conn-status.error .dot { background: #f87171; }
 
 /* ─── Cards ─── */
 .card {
   background: linear-gradient(145deg, #141414, #1a1a1a);
-  border: 1px solid #2a2a2a;
-  border-radius: 14px;
-  padding: 24px;
-  margin-bottom: 16px;
-  position: relative;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
-  transition: border-color 0.2s;
+  border: 1px solid #2a2a2a; border-radius: 14px; padding: 24px;
+  margin-bottom: 16px; position: relative;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4); transition: border-color 0.2s;
 }
 .card:hover { border-color: #333; }
 .card::before {
   content: ''; position: absolute; top: 0; left: 0; right: 0;
   height: 3px; border-radius: 14px 14px 0 0;
-  background: linear-gradient(90deg, #ff6b00, #ff8c00, #ff6b00);
-  opacity: 0.6;
+  background: linear-gradient(90deg, #ff6b00, #ff8c00, #ff6b00); opacity: 0.6;
 }
 .card-header {
-  display: flex; align-items: center; gap: 12px;
-  margin-bottom: 20px; padding-bottom: 14px;
-  border-bottom: 1px solid #252525;
+  display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+  padding-bottom: 14px; border-bottom: 1px solid #252525;
   font-size: 14px; font-weight: 700; color: #ccc;
   text-transform: uppercase; letter-spacing: 0.5px;
 }
@@ -91,27 +87,26 @@ body {
   font-family: 'JetBrains Mono', monospace;
 }
 
-/* ─── Form elements ─── */
+/* ─── Form ─── */
 .field-label {
   display: block; font-size: 11px; font-weight: 600; color: #666;
   text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; margin-top: 14px;
 }
 .field-label:first-child { margin-top: 0; }
-
-input[type="text"], textarea, select {
-  width: 100%; padding: 10px 14px;
-  background: #0d0d0d; border: 1px solid #2a2a2a;
+input[type="text"], input[type="password"], textarea, select {
+  width: 100%; padding: 10px 14px; background: #0d0d0d; border: 1px solid #2a2a2a;
   border-radius: 8px; font-size: 14px; color: #e0e0e0;
-  font-family: 'Inter', sans-serif;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  outline: none;
+  font-family: 'Inter', sans-serif; outline: none; transition: border-color 0.2s, box-shadow 0.2s;
 }
-input[type="text"]:focus, textarea:focus, select:focus {
+input[type="text"]:focus, input[type="password"]:focus, textarea:focus, select:focus {
   border-color: #ff6b00; box-shadow: 0 0 0 3px rgba(255,107,0,0.1);
 }
-input[type="text"]::placeholder, textarea::placeholder { color: #444; }
-textarea { resize: vertical; font-family: inherit; }
+input::placeholder, textarea::placeholder { color: #444; }
+textarea { resize: vertical; }
 select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23888' d='M6 8L0 0h12z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+
+.inline-group { display: flex; gap: 12px; }
+.inline-group > * { flex: 1; }
 
 /* ─── Image upload ─── */
 .image-row { display: flex; gap: 8px; align-items: center; }
@@ -156,6 +151,11 @@ select { cursor: pointer; appearance: none; background-image: url("data:image/sv
   background: transparent; color: #888; border: 1px solid #333;
 }
 .btn-secondary:hover { color: #ff6b00; border-color: #ff6b00; background: rgba(255,107,0,0.05); }
+.btn-ghost {
+  background: transparent; color: #555; border: none;
+  font-size: 11px; font-family: 'JetBrains Mono', monospace; padding: 6px 12px;
+}
+.btn-ghost:hover { color: #ff6b00; }
 
 /* ─── Status ─── */
 .status-bar {
@@ -163,21 +163,18 @@ select { cursor: pointer; appearance: none; background-image: url("data:image/sv
   display: none; font-size: 13px; font-weight: 500;
   border: 1px solid; font-family: 'JetBrains Mono', monospace; font-size: 12px;
 }
-.status-bar.success { display: block; background: rgba(34,197,94,0.08); border-color: rgba(34,197,94,0.3); color: #4ade80; }
-.status-bar.error { display: block; background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.3); color: #f87171; }
+.status-bar.success { display: block; background: rgba(74,222,128,0.08); border-color: rgba(74,222,128,0.3); color: #4ade80; }
+.status-bar.error { display: block; background: rgba(248,113,113,0.08); border-color: rgba(248,113,113,0.3); color: #f87171; }
 .status-bar.loading { display: block; background: rgba(255,107,0,0.08); border-color: rgba(255,107,0,0.3); color: #ff6b00; }
 .status-bar a { color: inherit; text-decoration: underline; }
 
-/* ─── Spinner ─── */
 .spinner {
   display: inline-block; width: 14px; height: 14px;
   border: 2px solid rgba(255,107,0,0.2); border-top-color: #ff6b00;
-  border-radius: 50%; animation: spin 0.6s linear infinite;
-  vertical-align: middle;
+  border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ─── Footer ─── */
 .footer {
   text-align: center; margin-top: 32px; padding-top: 24px;
   border-top: 1px solid #1a1a1a; font-size: 11px; color: #444;
@@ -185,30 +182,67 @@ select { cursor: pointer; appearance: none; background-image: url("data:image/sv
 }
 .footer span { color: #ff6b00; }
 
-/* ─── Inline group ─── */
-.inline-group { display: flex; gap: 12px; margin-top: 14px; }
-.inline-group > * { flex: 1; }
-
-/* ─── Pattern status ─── */
 #patternStatus { font-size: 11px; font-family: 'JetBrains Mono', monospace; }
 
-/* ─── Scrollbar ─── */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: #0d0d0d; }
 ::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #333; }
+
+/* ─── Connected state — hide connect form ─── */
+.connected .conn-fields { display: none; }
+.not-connected .conn-info { display: none; }
+.not-connected .builder-cards { opacity: 0.4; pointer-events: none; }
+.connected .builder-cards { opacity: 1; pointer-events: all; }
 </style>
 </head>
 <body>
-<div class="container">
+<div class="container" id="app">
 
   <div class="header">
     <div class="header-icon">&#9881;</div>
     <div>
       <h1>Page <span>Builder</span></h1>
-      <div class="subtitle">M25 Chauffeurs &mdash; Pattern Engine v1.0</div>
+      <div class="subtitle">WordPress Pattern Engine v1.0</div>
+    </div>
+    <div class="conn-status offline" id="connIndicator">
+      <span class="dot"></span> <span id="connLabel">Disconnected</span>
     </div>
   </div>
+
+  <!-- ─── Connect Card ─── -->
+  <div class="card" id="connectCard">
+    <div class="card-header">
+      <span class="num">&#9881;</span> <span id="connTitle">Connect to WordPress</span>
+    </div>
+    <div class="conn-fields">
+      <div class="field-label">WordPress URL</div>
+      <input type="text" id="wpUrl" placeholder="https://yoursite.com">
+      <div class="inline-group" style="margin-top:14px">
+        <div>
+          <div class="field-label">Username</div>
+          <input type="text" id="wpUser" placeholder="admin">
+        </div>
+        <div>
+          <div class="field-label">App Password</div>
+          <input type="password" id="wpPass" placeholder="xxxx xxxx xxxx xxxx xxxx xxxx">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" id="connectBtn" onclick="connect()">&#9654; Connect</button>
+        <span id="connMsg" style="font-size:12px;color:#666;font-family:'JetBrains Mono',monospace"></span>
+      </div>
+    </div>
+    <div class="conn-info">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span style="font-size:13px;color:#888">Connected as <strong id="connUserName" style="color:#e0e0e0"></strong></span>
+        <span style="font-size:12px;color:#555;font-family:'JetBrains Mono',monospace" id="connSiteUrl"></span>
+        <button class="btn btn-ghost" onclick="disconnect()" style="margin-left:auto">&#8635; Switch Account</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Builder Cards ─── -->
+  <div class="builder-cards">
 
   <!-- Settings -->
   <div class="card">
@@ -217,7 +251,7 @@ select { cursor: pointer; appearance: none; background-image: url("data:image/sv
     </div>
     <div class="field-label">Page Title</div>
     <input type="text" id="pageTitle" placeholder="e.g. Luxury Airport Transfer in BMW 7 Series">
-    <div class="inline-group">
+    <div class="inline-group" style="margin-top:14px">
       <div>
         <div class="field-label">Status</div>
         <select id="pageStatus">
@@ -230,10 +264,7 @@ select { cursor: pointer; appearance: none; background-image: url("data:image/sv
 
   <!-- Section 1 -->
   <div class="card">
-    <div class="card-header">
-      <span class="num">1</span> Section 1
-      <span class="badge">IMG &rarr; TEXT</span>
-    </div>
+    <div class="card-header"><span class="num">1</span> Section 1 <span class="badge">IMG &rarr; TEXT</span></div>
     <div class="field-label">Heading</div>
     <input type="text" id="s1-heading" placeholder="Luxury Airport Transfer in BMW 7 Series">
     <div class="field-label">Paragraph</div>
@@ -245,18 +276,13 @@ select { cursor: pointer; appearance: none; background-image: url("data:image/sv
         <div class="image-upload-btn">&#128206; Upload</div>
       </div>
       <input type="text" id="s1-image-url" placeholder="Or paste image URL">
-      <div class="image-preview-wrap" id="s1-preview-wrap">
-        <img class="image-preview" id="s1-preview">
-      </div>
+      <div class="image-preview-wrap" id="s1-preview-wrap"><img class="image-preview" id="s1-preview"></div>
     </div>
   </div>
 
   <!-- Section 2 -->
   <div class="card">
-    <div class="card-header">
-      <span class="num">2</span> Section 2
-      <span class="badge">TEXT &rarr; IMG</span>
-    </div>
+    <div class="card-header"><span class="num">2</span> Section 2 <span class="badge">TEXT &rarr; IMG</span></div>
     <div class="field-label">Heading</div>
     <input type="text" id="s2-heading" placeholder="Luxury Chauffeur Experience">
     <div class="field-label">Paragraph</div>
@@ -268,18 +294,13 @@ select { cursor: pointer; appearance: none; background-image: url("data:image/sv
         <div class="image-upload-btn">&#128206; Upload</div>
       </div>
       <input type="text" id="s2-image-url" placeholder="Or paste image URL">
-      <div class="image-preview-wrap" id="s2-preview-wrap">
-        <img class="image-preview" id="s2-preview">
-      </div>
+      <div class="image-preview-wrap" id="s2-preview-wrap"><img class="image-preview" id="s2-preview"></div>
     </div>
   </div>
 
   <!-- Section 3 -->
   <div class="card">
-    <div class="card-header">
-      <span class="num">3</span> Section 3
-      <span class="badge">IMG &rarr; TEXT</span>
-    </div>
+    <div class="card-header"><span class="num">3</span> Section 3 <span class="badge">IMG &rarr; TEXT</span></div>
     <div class="field-label">Heading</div>
     <input type="text" id="s3-heading" placeholder="Why Choose Us">
     <div class="field-label">Paragraph</div>
@@ -291,18 +312,13 @@ select { cursor: pointer; appearance: none; background-image: url("data:image/sv
         <div class="image-upload-btn">&#128206; Upload</div>
       </div>
       <input type="text" id="s3-image-url" placeholder="Or paste image URL">
-      <div class="image-preview-wrap" id="s3-preview-wrap">
-        <img class="image-preview" id="s3-preview">
-      </div>
+      <div class="image-preview-wrap" id="s3-preview-wrap"><img class="image-preview" id="s3-preview"></div>
     </div>
   </div>
 
   <!-- Read More -->
   <div class="card">
-    <div class="card-header">
-      <span class="num">&#9776;</span> Read More
-      <span class="badge">ACCORDION</span>
-    </div>
+    <div class="card-header"><span class="num">&#9776;</span> Read More <span class="badge">ACCORDION</span></div>
     <div class="field-label">Content</div>
     <textarea id="readMore" rows="6" placeholder="Content revealed when user clicks the &#39;Read More&#39; toggle&hellip;"></textarea>
   </div>
@@ -319,20 +335,144 @@ select { cursor: pointer; appearance: none; background-image: url("data:image/sv
     <div class="status-bar" id="statusBar"></div>
   </div>
 
-  <div class="footer">M25 Chauffeurs &mdash; <span>Page Builder</span> &mdash; v1.0</div>
+  </div><!-- /builder-cards -->
+
+  <div class="footer">Page Builder &mdash; <span>Multi-WordPress</span> &mdash; v2.0</div>
 </div>
 
 <script>
-let patternContent = null;
+// ─── Credentials management ───
+const STORAGE_KEY = 'wp_page_builder_creds';
 
+function loadCreds() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || null; } catch { return null; }
+}
+
+function saveCreds(creds) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(creds));
+}
+
+function clearCreds() {
+  localStorage.removeItem(STORAGE_KEY);
+}
+
+function getHeaders() {
+  const c = loadCreds();
+  return c ? {
+    'X-WP-URL': c.url,
+    'X-WP-User': c.user,
+    'X-WP-App-Pass': c.pass,
+  } : {};
+}
+
+// ─── API helper ───
+async function api(path, options = {}) {
+  const headers = { ...getHeaders(), ...options.headers };
+  const res = await fetch(path, { ...options, headers });
+  return res.json();
+}
+
+// ─── Connection ───
+async function connect() {
+  const btn = document.getElementById('connectBtn');
+  const msg = document.getElementById('connMsg');
+  btn.disabled = true;
+  msg.innerHTML = '<span class="spinner"></span> Verifying...';
+
+  const creds = {
+    url: document.getElementById('wpUrl').value.trim().replace(/\/+$/, ''),
+    user: document.getElementById('wpUser').value.trim(),
+    pass: document.getElementById('wpPass').value.trim(),
+  };
+
+  if (!creds.url || !creds.user || !creds.pass) {
+    msg.textContent = 'Fill all fields'; msg.style.color = '#f87171';
+    btn.disabled = false; return;
+  }
+
+  // Temporarily save to test
+  saveCreds(creds);
+
+  try {
+    const data = await api('/api/verify', { method: 'POST' });
+    if (data.success) {
+      document.getElementById('connUserName').textContent = data.user.name;
+      document.getElementById('connSiteUrl').textContent = creds.url;
+      setConnected(true);
+      msg.textContent = 'Connected';
+      msg.style.color = '#4ade80';
+    } else {
+      clearCreds();
+      msg.textContent = data.error || 'Connection failed';
+      msg.style.color = '#f87171';
+    }
+  } catch (err) {
+    clearCreds();
+    msg.textContent = err.message;
+    msg.style.color = '#f87171';
+  }
+
+  btn.disabled = false;
+}
+
+function disconnect() {
+  clearCreds();
+  setConnected(false);
+  document.getElementById('wpUrl').value = '';
+  document.getElementById('wpUser').value = '';
+  document.getElementById('wpPass').value = '';
+  document.getElementById('connMsg').textContent = '';
+}
+
+function setConnected(connected) {
+  const app = document.getElementById('app');
+  const ind = document.getElementById('connIndicator');
+  const label = document.getElementById('connLabel');
+  const title = document.getElementById('connTitle');
+
+  if (connected) {
+    app.className = 'container connected';
+    ind.className = 'conn-status online';
+    label.textContent = 'Connected';
+    title.textContent = 'Connected to WordPress';
+  } else {
+    app.className = 'container not-connected';
+    ind.className = 'conn-status offline';
+    label.textContent = 'Disconnected';
+    title.textContent = 'Connect to WordPress';
+  }
+}
+
+// ─── Restore session on load ───
+(function init() {
+  const creds = loadCreds();
+  if (creds) {
+    // Test stored creds
+    api('/api/verify', { method: 'POST' }).then(data => {
+      if (data.success) {
+        document.getElementById('wpUrl').value = creds.url;
+        document.getElementById('wpUser').value = creds.user;
+        document.getElementById('wpPass').value = creds.pass;
+        document.getElementById('connUserName').textContent = data.user.name;
+        document.getElementById('connSiteUrl').textContent = creds.url;
+        setConnected(true);
+      } else {
+        clearCreds();
+        setConnected(false);
+      }
+    }).catch(() => { clearCreds(); setConnected(false); });
+  } else {
+    setConnected(false);
+  }
+})();
+
+// ─── Pattern ───
 async function loadPattern() {
   const el = document.getElementById('patternStatus');
   el.innerHTML = '<span class="spinner"></span> Loading...';
   try {
-    const res = await fetch('/api/pattern');
-    const data = await res.json();
+    const data = await api('/api/pattern');
     if (data.success) {
-      patternContent = data.content;
       el.textContent = 'Pattern loaded';
       el.style.color = '#4ade80';
     } else {
@@ -345,6 +485,7 @@ async function loadPattern() {
   }
 }
 
+// ─── Upload ───
 async function uploadImage(fileInput, urlInput, previewId, wrapId) {
   const file = fileInput.files[0];
   if (!file) return;
@@ -352,12 +493,11 @@ async function uploadImage(fileInput, urlInput, previewId, wrapId) {
   const reader = new FileReader();
   reader.onload = async function(e) {
     try {
-      const res = await fetch('/api/upload', {
+      const data = await api('/api/upload', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ file: e.target.result, filename: file.name, mimeType: file.type }),
       });
-      const data = await res.json();
       if (data.success) {
         urlInput.value = data.url;
         const wrap = document.getElementById(wrapId);
@@ -381,12 +521,8 @@ async function uploadImage(fileInput, urlInput, previewId, wrapId) {
   document.getElementById(p + '-image-url').addEventListener('input', function() {
     const wrap = document.getElementById(p + '-preview-wrap');
     const preview = document.getElementById(p + '-preview');
-    if (this.value) {
-      preview.src = this.value;
-      wrap.classList.add('show');
-    } else {
-      wrap.classList.remove('show');
-    }
+    if (this.value) { preview.src = this.value; wrap.classList.add('show'); }
+    else { wrap.classList.remove('show'); }
   });
 });
 
@@ -404,6 +540,7 @@ function showStatus(msg, type) {
   bar.className = 'status-bar ' + type;
 }
 
+// ─── Create page ───
 async function createPage() {
   const btn = document.getElementById('createBtn');
   btn.disabled = true;
@@ -411,20 +548,17 @@ async function createPage() {
   showStatus('Building page...', 'loading');
 
   try {
-    const payload = {
-      title: document.getElementById('pageTitle').value || 'New Page',
-      status: document.getElementById('pageStatus').value,
-      sections: [getSection('s1'), getSection('s2'), getSection('s3')],
-      readMore: document.getElementById('readMore').value,
-    };
-
-    const res = await fetch('/api/create-page', {
+    const data = await api('/api/create-page', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        title: document.getElementById('pageTitle').value || 'New Page',
+        status: document.getElementById('pageStatus').value,
+        sections: [getSection('s1'), getSection('s2'), getSection('s3')],
+        readMore: document.getElementById('readMore').value,
+      }),
     });
 
-    const data = await res.json();
     if (data.success) {
       document.getElementById('statusBar').innerHTML =
         `Page built: <strong>${data.title}</strong> &mdash; <a href="${data.link}" target="_blank">${data.link}</a>`;
