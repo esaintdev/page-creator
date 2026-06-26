@@ -1,0 +1,16 @@
+{
+  "name": "wp-page-creator",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node api/index.js",
+    "dev": "node api/index.js",
+    "vercel-build": "echo build complete"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "vercel": "^41.0.0"
+  }
+}

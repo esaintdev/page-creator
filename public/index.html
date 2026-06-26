@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WP Page Creator</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f0f1; color: #1d2327; padding: 20px; }
+  .container { max-width: 800px; margin: 0 auto; }
+  h1 { font-size: 24px; margin-bottom: 8px; }
+  .subtitle { color: #646970; margin-bottom: 24px; }
+  .card { background: #fff; border: 1px solid #c3c4c7; border-radius: 8px; padding: 24px; margin-bottom: 20px; }
+  .card h2 { font-size: 16px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #f0f0f1; }
+  .section-label { font-size: 13px; font-weight: 600; color: #50575e; margin-bottom: 8px; margin-top: 12px; }
+  .section-label:first-child { margin-top: 0; }
+  input[type="text"], textarea { width: 100%; padding: 8px 12px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 14px; }
+  input[type="text"]:focus, textarea:focus { border-color: #2271b1; box-shadow: 0 0 0 1px #2271b1; outline: none; }
+  textarea { resize: vertical; font-family: inherit; }
+  .image-row { display: flex; gap: 8px; align-items: center; }
+  .image-row input { flex: 1; }
+  .image-row input[type="file"] { flex: 1; padding: 6px; border: 1px dashed #8c8f94; border-radius: 4px; }
+  .image-preview { width: 48px; height: 48px; border-radius: 4px; object-fit: cover; border: 1px solid #c3c4c7; display: none; }
+  .image-preview.show { display: block; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; font-size: 14px; font-weight: 500; border-radius: 4px; cursor: pointer; border: none; }
+  .btn-primary { background: #2271b1; color: #fff; }
+  .btn-primary:hover { background: #135e96; }
+  .btn-primary:disabled { background: #a7aaad; cursor: not-allowed; }
+  .btn-secondary { background: #f6f7f7; color: #2271b1; border: 1px solid #2271b1; }
+  .btn-secondary:hover { background: #f0f0f1; }
+  .form-actions { display: flex; gap: 12px; align-items: center; margin-top: 16px; }
+  .status-bar { margin-top: 16px; padding: 12px 16px; border-radius: 4px; display: none; }
+  .status-bar.success { display: block; background: #edfaef; border: 1px solid #68de7c; color: #1e6b2e; }
+  .status-bar.error { display: block; background: #fcf0f1; border: 1px solid #fabca9; color: #8a2424; }
+  .status-bar.loading { display: block; background: #f0f6fc; border: 1px solid #b9d8f4; color: #1d2327; }
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #c3c4c7; border-top-color: #2271b1; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .result-link { font-weight: 600; }
+  .result-link a { color: #2271b1; }
+  .inline-group { display: flex; gap: 12px; }
+  .inline-group > * { flex: 1; }
+  label { display: block; font-size: 12px; font-weight: 600; color: #50575e; margin-bottom: 4px; }
+  .upload-btn { padding: 6px 12px; font-size: 12px; }
+  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #f0f0f1; color: #50575e; margin-left: 8px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>WP Page Creator</h1>
+  <p class="subtitle">Create pages using the <strong>Page New Structure</strong> pattern</p>
+
+  <div class="card">
+    <h2>Page Settings</h2>
+    <div class="section-label">Page Title</div>
+    <input type="text" id="pageTitle" placeholder="e.g. Luxury Airport Transfer in BMW 7 Series to Leeds Bradford">
+
+    <div class="inline-group" style="margin-top:12px">
+      <div>
+        <label for="pageStatus">Status</label>
+        <select id="pageStatus" style="width:100%;padding:8px 12px;border:1px solid #8c8f94;border-radius:4px;font-size:14px">
+          <option value="draft">Draft</option>
+          <option value="publish">Publish</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Section 1 <span class="badge">Image Right · Text Left</span></h2>
+    <div class="section-label">Heading</div>
+    <input type="text" id="s1-heading" placeholder="Luxury Airport Transfer in BMW 7 Series">
+    <div class="section-label">Paragraph</div>
+    <textarea id="s1-paragraph" rows="3" placeholder="Describe the service..."></textarea>
+    <div class="section-label">Image</div>
+    <div class="image-row">
+      <input type="file" id="s1-image-file" accept="image/*">
+      <input type="text" id="s1-image-url" placeholder="Or paste image URL">
+      <img class="image-preview" id="s1-preview">
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Section 2 <span class="badge">Image Left · Text Right</span></h2>
+    <div class="section-label">Heading</div>
+    <input type="text" id="s2-heading" placeholder="Luxury Chauffeur Experience">
+    <div class="section-label">Paragraph</div>
+    <textarea id="s2-paragraph" rows="3" placeholder="Describe the experience..."></textarea>
+    <div class="section-label">Image</div>
+    <div class="image-row">
+      <input type="file" id="s2-image-file" accept="image/*">
+      <input type="text" id="s2-image-url" placeholder="Or paste image URL">
+      <img class="image-preview" id="s2-preview">
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Section 3 <span class="badge">Text Left · Image Right</span></h2>
+    <div class="section-label">Heading</div>
+    <input type="text" id="s3-heading" placeholder="Why Choose Us">
+    <div class="section-label">Paragraph</div>
+    <textarea id="s3-paragraph" rows="3" placeholder="Describe why..."></textarea>
+    <div class="section-label">Image</div>
+    <div class="image-row">
+      <input type="file" id="s3-image-file" accept="image/*">
+      <input type="text" id="s3-image-url" placeholder="Or paste image URL">
+      <img class="image-preview" id="s3-preview">
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Read More <span class="badge">Accordion Panel</span></h2>
+    <div class="section-label">Content (accepts HTML)</div>
+    <textarea id="readMore" rows="6" placeholder="Additional content that appears when the user clicks 'Read More'..."></textarea>
+  </div>
+
+  <div class="card" style="text-align:right">
+    <div class="form-actions" style="justify-content:space-between">
+      <div>
+        <button class="btn btn-secondary" onclick="loadPattern()">Preview Pattern</button>
+        <span id="patternStatus" style="font-size:12px;color:#646970;margin-left:8px"></span>
+      </div>
+      <button class="btn btn-primary" id="createBtn" onclick="createPage()">Create Page</button>
+    </div>
+    <div class="status-bar" id="statusBar"></div>
+  </div>
+</div>
+
+<script>
+let patternContent = null;
+
+async function loadPattern() {
+  const status = document.getElementById('patternStatus');
+  status.innerHTML = '<span class="spinner"></span> Loading pattern...';
+  try {
+    const res = await fetch('/api/pattern');
+    const data = await res.json();
+    if (data.success) {
+      patternContent = data.content;
+      status.textContent = 'Pattern loaded ✓';
+      status.style.color = '#1e6b2e';
+    } else {
+      status.textContent = 'Failed: ' + data.error;
+      status.style.color = '#8a2424';
+    }
+  } catch (err) {
+    status.textContent = 'Error: ' + err.message;
+    status.style.color = '#8a2424';
+  }
+}
+
+// Upload file handler — reads file as base64, sends to API as JSON
+async function uploadImage(fileInput, urlInput, previewId) {
+  const file = fileInput.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    const base64 = e.target.result;
+    const filename = file.name;
+
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file: base64, filename, mimeType: file.type }),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        urlInput.value = data.url;
+        const preview = document.getElementById(previewId);
+        preview.src = data.url;
+        preview.classList.add('show');
+        return { url: data.url, id: data.id };
+      } else {
+        alert('Upload failed: ' + data.error);
+      }
+    } catch (err) {
+      alert('Upload error: ' + err.message);
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+// Auto-upload on file select
+['s1', 's2', 's3'].forEach(prefix => {
+  document.getElementById(`${prefix}-image-file`).addEventListener('change', function() {
+    uploadImage(this, document.getElementById(`${prefix}-image-url`), `${prefix}-preview`);
+  });
+  document.getElementById(`${prefix}-image-url`).addEventListener('input', function() {
+    const preview = document.getElementById(`${prefix}-preview`);
+    if (this.value) {
+      preview.src = this.value;
+      preview.classList.add('show');
+    } else {
+      preview.classList.remove('show');
+    }
+  });
+});
+
+function getSectionData(prefix) {
+  return {
+    heading: document.getElementById(`${prefix}-heading`).value,
+    paragraph: document.getElementById(`${prefix}-paragraph`).value,
+    imageUrl: document.getElementById(`${prefix}-image-url`).value || undefined,
+  };
+}
+
+function showStatus(msg, type) {
+  const bar = document.getElementById('statusBar');
+  bar.textContent = msg;
+  bar.className = 'status-bar ' + type;
+}
+
+async function createPage() {
+  const btn = document.getElementById('createBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Creating...';
+  showStatus('Creating page...', 'loading');
+
+  try {
+    const payload = {
+      title: document.getElementById('pageTitle').value || 'New Page',
+      status: document.getElementById('pageStatus').value,
+      sections: [
+        getSectionData('s1'),
+        getSectionData('s2'),
+        getSectionData('s3'),
+      ],
+      readMore: document.getElementById('readMore').value,
+    };
+
+    const res = await fetch('/api/create-page', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      showStatus(
+        `Page created: <strong>${data.title}</strong> (<a href="${data.link}" target="_blank">${data.link}</a>)`,
+        'success'
+      );
+      document.getElementById('statusBar').innerHTML = document.getElementById('statusBar').textContent;
+    } else {
+      showStatus('Error: ' + data.error, 'error');
+    }
+  } catch (err) {
+    showStatus('Error: ' + err.message, 'error');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Create Page';
+}
+</script>
+</body>
+</html>
