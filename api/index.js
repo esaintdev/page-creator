@@ -156,7 +156,11 @@ app.post('/api/create-page', async (req, res) => {
       const paras = (readMore || '')
         .split(/\n\s*\n/)
         .map(p => p.trim()).filter(Boolean)
-        .map(p => `<!-- wp:paragraph -->\n<p>${escHtml(p)}</p>\n<!-- /wp:paragraph -->`)
+        .map(p => {
+          const text = escHtml(p);
+          const isHeading = p.length < 100 && !/[.!:]$/.test(p.trim());
+          return `<!-- wp:paragraph -->\n<p>${isHeading ? `<strong>${text}</strong>` : text}</p>\n<!-- /wp:paragraph -->`;
+        })
         .join('\n') || `<p>${escHtml(readMore || '')}</p>`;
 
       content = content.replace(
