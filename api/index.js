@@ -153,9 +153,15 @@ app.post('/api/create-page', async (req, res) => {
     if (sections[2]?.imageUrl) content = replaceImage(content, 2, sections[2].imageUrl, sections[2].imageId);
 
     if (readMore !== undefined) {
+      const paras = (readMore || '')
+        .split(/\n\s*\n/)
+        .map(p => p.trim()).filter(Boolean)
+        .map(p => `<!-- wp:paragraph -->\n<p>${escHtml(p)}</p>\n<!-- /wp:paragraph -->`)
+        .join('\n') || `<p>${escHtml(readMore || '')}</p>`;
+
       content = content.replace(
-        /(<!-- wp:accordion-panel[\s\S]*?)(<p><\/p>)([\s\S]*?<!-- \/wp:accordion-panel -->)/,
-        `$1<p>${escHtml(readMore || '')}</p>$3`
+        /(<!-- wp:accordion-panel[\s\S]*?)((?:<!--\s*wp:paragraph[\s\S]*?\/wp:paragraph\s*-->)?\s*<p><\/p>\s*)([\s\S]*?<!-- \/wp:accordion-panel -->)/,
+        `$1\n${paras}\n$3`
       );
     }
 
