@@ -130,7 +130,7 @@ app.post('/api/upload', async (req, res) => {
 // ── Create page ──
 app.post('/api/create-page', async (req, res) => {
   try {
-    const { title, status, sections, readMore } = req.body;
+    const { title, status, sections, readMore, seo } = req.body;
 
     const pattern = await wpFetch(`/wp/v2/blocks/${PATTERN_ID}?_fields=id,title,content`, {}, req);
     let content = pattern.content?.raw || '';
@@ -173,6 +173,22 @@ app.post('/api/create-page', async (req, res) => {
       method: 'POST',
       body: JSON.stringify({ title: title || 'New Page', status: status || 'draft', content }),
     }, req);
+
+    if (seo && (seo.focusKeyphrase || seo.metaDescription || seo.seoTitle)) {
+      await wpFetch('/aioseo/v1/post', {
+        method: 'POST',
+        _creds: getCreds(req),
+        body: JSON.stringify({
+          id: pageData.id,
+          postId: String(pageData.id),
+          post_type: 'page',
+          postType: 'page',
+          ...(seo.seoTitle ? { title: seo.seoTitle } : {}),
+          ...(seo.metaDescription ? { description: seo.metaDescription } : {}),
+          ...(seo.focusKeyphrase ? { keyphrases: { focus: { keyphrase: seo.focusKeyphrase }, additional: [] } } : {}),
+        }),
+      }, req);
+    }
 
     res.json({ success: true, id: pageData.id, link: pageData.link, title: pageData.title?.rendered, status: pageData.status });
   } catch (err) {

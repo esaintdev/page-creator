@@ -262,6 +262,17 @@ select { cursor: pointer; appearance: none; background-image: url("data:image/sv
     </div>
   </div>
 
+  <!-- SEO -->
+  <div class="card">
+    <div class="card-header"><span class="num">&#9881;</span> SEO <span class="badge">AIOSEO</span></div>
+    <div class="field-label">Focus Keyphrase</div>
+    <input type="text" id="seoKeyphrase" placeholder="e.g. Luxury Chauffeur Service London">
+    <div class="field-label">Meta Description</div>
+    <textarea id="seoDescription" rows="2" placeholder="Brief description for search results&hellip;"></textarea>
+    <div class="field-label">SEO Title <span style="color:#555;font-weight:400;text-transform:none">(optional, defaults to page title)</span></div>
+    <input type="text" id="seoTitle" placeholder="Leave blank to use page title">
+  </div>
+
   <!-- Section 1 -->
   <div class="card">
     <div class="card-header"><span class="num">1</span> Section 1 <span class="badge">IMG &rarr; TEXT</span></div>
@@ -556,6 +567,11 @@ async function createPage() {
         status: document.getElementById('pageStatus').value,
         sections: [getSection('s1'), getSection('s2'), getSection('s3')],
         readMore: document.getElementById('readMore').value,
+        seo: {
+          focusKeyphrase: document.getElementById('seoKeyphrase').value || undefined,
+          metaDescription: document.getElementById('seoDescription').value || undefined,
+          seoTitle: document.getElementById('seoTitle').value || undefined,
+        },
       }),
     });
 
