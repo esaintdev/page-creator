@@ -67,6 +67,11 @@ const ORIGINAL_IMAGES = [
   { url: 'https://m25chauffeurs.com/wp-content/uploads/2026/05/Rolls-Royce-Chauffeur-Hire-in-Liverpool.png', id: 32500 },
 ];
 
+const LINK_RULES = [
+  { phrase: 'Why Choose M25 Chauffeurs Ltd?', url: 'https://m25chauffeurs.com/book-now/' },
+  { phrase: 'Book Your Luxury Chauffeur Service with M25 Chauffeurs Ltd.', url: 'https://m25chauffeurs.com/book-now/' },
+];
+
 function escHtml(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
@@ -88,6 +93,15 @@ function paraBlocks(text) {
   return parts.map(p => p.trim()).filter(Boolean)
     .map(p => `<!-- wp:paragraph -->\n<p>${escHtml(p)}</p>\n<!-- /wp:paragraph -->`)
     .join('\n');
+}
+
+function autoLink(text) {
+  let result = text;
+  for (const rule of LINK_RULES) {
+    const re = new RegExp(rule.phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+    result = result.replace(re, `<a href="${rule.url}" target="_blank" rel="noopener">$&</a>`);
+  }
+  return result;
 }
 
 function replaceImage(html, index, newUrl, newId) {
@@ -192,7 +206,7 @@ app.post('/api/create-page', async (req, res) => {
         ? raw.split(/\n{2,}/).map(p => p.trim()).filter(Boolean)
         : raw.split('\n').map(l => l.trim()).filter(Boolean);
       const paras = blocks.map(p => {
-        const text = escHtml(p);
+        const text = autoLink(escHtml(p));
         const isHeading = p.length < 100 && !/[.!:]$/.test(p.trim());
         return `<!-- wp:paragraph -->\n<p>${isHeading ? `<strong>${text}</strong>` : text}</p>\n<!-- /wp:paragraph -->`;
       }).join('\n') || `<p>${escHtml(readMore || '')}</p>`;
