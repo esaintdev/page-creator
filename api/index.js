@@ -415,6 +415,103 @@ app.post('/api/batch-import', async (req, res) => {
   }
 });
 
+// ── Import single .docx from upload ──
+app.post('/api/import-docx', async (req, res) => {
+  try {
+    const { file: fileData, filename } = req.body;
+    if (!fileData) return res.status(400).json({ success: false, error: 'No file data' });
+
+    const base64Data = fileData.includes('base64,') ? fileData.split('base64,')[1] : fileData;
+    const buffer = Buffer.from(base64Data, 'base64');
+    const { value: text } = await mammoth.extractRawText({ buffer });
+
+    const parsed = parseDocxLines(text.split('\n').map(l => l.trim()));
+    if (!parsed.title) return res.status(400).json({ success: false, error: 'Could not parse page title from document' });
+
+    const pattern = await wpFetch(`/wp/v2/blocks/${PATTERN_ID}?_fields=id,title,content`, {}, req);
+    let content = pattern.content?.raw || '';
+
+    if (parsed.sections[0]?.heading) {
+      content = content.replace(
+        '<h3 class="wp-block-heading has-text-align-left"></h3>',
+        `<h3 class="wp-block-heading has-text-align-left">${escHtml(parsed.sections[0].heading)}</h3>`
+      );
+    }
+    if (parsed.sections[0]?.paragraph) {
+      content = content.replace(
+        '<!-- wp:paragraph -->\n<p></p>\n<!-- /wp:paragraph -->',
+        paraBlocks(parsed.sections[0].paragraph)
+      );
+    }
+
+    if (parsed.sections[1]?.heading) content = content.replace('Highlight and paste your subheading', escHtml(parsed.sections[1].heading));
+    if (parsed.sections[1]?.paragraph) {
+      content = content.replace(
+        '<!-- wp:paragraph -->\n<p>Highlight and paste your paragraph</p>\n<!-- /wp:paragraph -->',
+        paraBlocks(parsed.sections[1].paragraph)
+      );
+    }
+
+    if (parsed.sections[2]?.heading) content = content.replace('Highlight and paste your subheading', escHtml(parsed.sections[2].heading));
+    if (parsed.sections[2]?.paragraph) {
+      content = content.replace(
+        '<!-- wp:paragraph -->\n<p>Highlight and paste your paragraph</p>\n<!-- /wp:paragraph -->',
+        paraBlocks(parsed.sections[2].paragraph)
+      );
+    }
+
+    if (parsed.readMore) {
+      const raw = parsed.readMore.replace(/\r\n/g, '\n').trim();
+      const blocks = raw.includes('\n\n')
+        ? raw.split(/\n{2,}/).map(p => p.trim()).filter(Boolean)
+        : raw.split('\n').map(l => l.trim()).filter(Boolean);
+      const paras = blocks.map(p => {
+        const text = autoLink(escHtml(p));
+        const isHeading = p.length < 100 && !/[.!:]$/.test(p.trim());
+        return `<!-- wp:paragraph -->\n<p>${isHeading ? `<strong>${text}</strong>` : text}</p>\n<!-- /wp:paragraph -->`;
+      }).join('\n');
+
+      content = content.replace(
+        /(<!-- wp:accordion-panel[\s\S]*?)<!--\s*wp:paragraph[\s\S]*?\/wp:paragraph\s*-->([\s\S]*?<!-- \/wp:accordion-panel -->)/,
+        `$1\n${paras}\n$2`
+      );
+    }
+
+    if (parsed.metaDescription) {
+      content = content.replace(/alt=""/g, `alt="${escHtml(parsed.metaDescription)}"`);
+    }
+
+    const pageData = await wpFetch('/wp/v2/pages', {
+      method: 'POST',
+      body: JSON.stringify({ title: parsed.title, status: 'publish', content }),
+    }, req);
+
+    if (parsed.focusKeyphrase || parsed.metaDescription || parsed.additionalKeyphrases?.length) {
+      const kp = {};
+      if (parsed.focusKeyphrase) kp.focus = { keyphrase: parsed.focusKeyphrase };
+      if (parsed.additionalKeyphrases?.length) {
+        kp.additional = parsed.additionalKeyphrases.filter(Boolean).map(k => ({ keyphrase: k }));
+      }
+      await wpFetch('/aioseo/v1/post', {
+        method: 'POST',
+        _creds: getCreds(req),
+        body: JSON.stringify({
+          id: pageData.id,
+          postId: String(pageData.id),
+          post_type: 'page',
+          postType: 'page',
+          ...(parsed.metaDescription ? { description: parsed.metaDescription } : {}),
+          ...(Object.keys(kp).length ? { keyphrases: kp } : {}),
+        }),
+      }, req);
+    }
+
+    res.json({ success: true, id: pageData.id, link: pageData.link, title: parsed.title });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ── Get page (for editing) ──
 app.get('/api/get-page/:id', async (req, res) => {
   try {

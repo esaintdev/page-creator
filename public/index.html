@@ -356,10 +356,20 @@ select { cursor: pointer; appearance: none; background-image: url("data:image/sv
   <!-- ─── Batch Import ─── -->
   <div class="card">
     <div class="card-header"><span class="num">&#9881;</span> Batch Import <span class="badge">DOCX</span></div>
-    <div class="field-label">Drop .docx files into <code style="color:#ff6b00">documents/</code> folder, then import</div>
-    <div class="form-actions" style="margin-top:8px">
+    <div class="field-label">From server folder</div>
+    <div class="form-actions" style="margin-top:4px">
       <button class="btn btn-primary" id="batchBtn" onclick="batchImport()">&#9654; Import from Documents</button>
       <span id="batchStatus" style="font-size:12px;color:#666;font-family:JetBrains Mono,monospace"></span>
+    </div>
+    <div style="border-top:1px solid #1a1a1a;margin:14px 0 12px"></div>
+    <div class="field-label">Upload .docx file (works on Vercel)</div>
+    <div class="form-actions" style="margin-top:4px">
+      <div class="image-upload-wrap" style="width:auto">
+        <input type="file" id="docxFile" accept=".docx">
+        <div class="image-upload-btn">&#128206; Choose File</div>
+      </div>
+      <button class="btn btn-primary" id="uploadDocxBtn" onclick="uploadDocx()">&#9654; Upload & Import</button>
+      <span id="docxStatus" style="font-size:12px;color:#666;font-family:JetBrains Mono,monospace"></span>
     </div>
     <div id="batchResults" style="margin-top:12px;display:none"></div>
   </div>
@@ -673,6 +683,46 @@ async function batchImport() {
     status.innerHTML = `<span style="color:#f87171">Error: ${err.message}</span>`;
   }
   btn.disabled = false;
+}
+
+// ─── Upload .docx and import ───
+async function uploadDocx() {
+  const fileInput = document.getElementById('docxFile');
+  const status = document.getElementById('docxStatus');
+  const results = document.getElementById('batchResults');
+  const file = fileInput.files[0];
+  if (!file) { status.textContent = 'Select a .docx file'; return; }
+
+  const btn = document.getElementById('uploadDocxBtn');
+  btn.disabled = true;
+  status.innerHTML = '<span class="spinner"></span> Importing...';
+  results.style.display = 'none';
+
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    try {
+      const data = await api('/api/import-docx', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file: e.target.result, filename: file.name }),
+      });
+      if (data.success) {
+        results.innerHTML = `<div style="color:#4ade80;font-weight:600;margin-bottom:8px">&#10003; Published:</div>
+          <div style="padding:6px 0;font-size:13px">
+            <a href="${data.link}" target="_blank" style="color:#ff6b00">${data.id}</a> &mdash; ${data.title}
+          </div>`;
+        results.style.display = 'block';
+        status.innerHTML = '<span style="color:#4ade80">&#10003; Done</span>';
+        fileInput.value = '';
+      } else {
+        status.innerHTML = `<span style="color:#f87171">Error: ${data.error}</span>`;
+      }
+    } catch (err) {
+      status.innerHTML = `<span style="color:#f87171">Error: ${err.message}</span>`;
+    }
+    btn.disabled = false;
+  };
+  reader.readAsDataURL(file);
 }
 
 // ─── Fetch page for editing ───
