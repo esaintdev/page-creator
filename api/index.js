@@ -182,7 +182,6 @@ app.post('/api/create-page', async (req, res) => {
         paraBlocks(sections[0].paragraph)
       );
     }
-    if (sections[0]?.imageUrl) content = replaceImage(content, 0, sections[0].imageUrl, sections[0].imageId);
 
     if (sections[1]?.heading) content = content.replace('Highlight and paste your subheading', escHtml(sections[1].heading));
     if (sections[1]?.paragraph) {
@@ -191,7 +190,6 @@ app.post('/api/create-page', async (req, res) => {
         paraBlocks(sections[1].paragraph)
       );
     }
-    if (sections[1]?.imageUrl) content = replaceImage(content, 1, sections[1].imageUrl, sections[1].imageId);
 
     if (sections[2]?.heading) content = content.replace('Highlight and paste your subheading', escHtml(sections[2].heading));
     if (sections[2]?.paragraph) {
@@ -200,7 +198,6 @@ app.post('/api/create-page', async (req, res) => {
         paraBlocks(sections[2].paragraph)
       );
     }
-    if (sections[2]?.imageUrl) content = replaceImage(content, 2, sections[2].imageUrl, sections[2].imageId);
 
     if (readMore !== undefined) {
       const raw = (readMore || '').replace(/\r\n/g, '\n').trim();
