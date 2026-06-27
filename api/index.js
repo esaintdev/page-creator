@@ -71,6 +71,25 @@ function escHtml(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+function paraBlocks(text) {
+  if (!text) return '';
+  const normalized = text.replace(/\r\n/g, '\n').trim();
+  let parts;
+  if (normalized.includes('\n\n')) {
+    parts = normalized.split(/\n{2,}/);
+  } else if (normalized.includes('\n')) {
+    parts = normalized.split('\n');
+  } else {
+    parts = normalized.split(/\.\s+/).filter(Boolean);
+    if (parts.length > 1) {
+      parts = parts.map((s, i, a) => i < a.length - 1 ? s + '.' : s);
+    }
+  }
+  return parts.map(p => p.trim()).filter(Boolean)
+    .map(p => `<!-- wp:paragraph -->\n<p>${escHtml(p)}</p>\n<!-- /wp:paragraph -->`)
+    .join('\n');
+}
+
 function replaceImage(html, index, newUrl, newId) {
   const old = ORIGINAL_IMAGES[index];
   let result = html.replace(old.url, newUrl);
@@ -141,15 +160,30 @@ app.post('/api/create-page', async (req, res) => {
         `<h3 class="wp-block-heading has-text-align-left">${escHtml(sections[0].heading)}</h3>`
       );
     }
-    content = content.replace('<p></p>', `<p>${escHtml(sections[0]?.paragraph || '')}</p>`);
+    if (sections[0]?.paragraph) {
+      content = content.replace(
+        '<!-- wp:paragraph -->\n<p></p>\n<!-- /wp:paragraph -->',
+        paraBlocks(sections[0].paragraph)
+      );
+    }
     if (sections[0]?.imageUrl) content = replaceImage(content, 0, sections[0].imageUrl, sections[0].imageId);
 
     if (sections[1]?.heading) content = content.replace('Highlight and paste your subheading', escHtml(sections[1].heading));
-    if (sections[1]?.paragraph) content = content.replace('Highlight and paste your paragraph', escHtml(sections[1].paragraph));
+    if (sections[1]?.paragraph) {
+      content = content.replace(
+        '<!-- wp:paragraph -->\n<p>Highlight and paste your paragraph</p>\n<!-- /wp:paragraph -->',
+        paraBlocks(sections[1].paragraph)
+      );
+    }
     if (sections[1]?.imageUrl) content = replaceImage(content, 1, sections[1].imageUrl, sections[1].imageId);
 
     if (sections[2]?.heading) content = content.replace('Highlight and paste your subheading', escHtml(sections[2].heading));
-    if (sections[2]?.paragraph) content = content.replace('Highlight and paste your paragraph', escHtml(sections[2].paragraph));
+    if (sections[2]?.paragraph) {
+      content = content.replace(
+        '<!-- wp:paragraph -->\n<p>Highlight and paste your paragraph</p>\n<!-- /wp:paragraph -->',
+        paraBlocks(sections[2].paragraph)
+      );
+    }
     if (sections[2]?.imageUrl) content = replaceImage(content, 2, sections[2].imageUrl, sections[2].imageId);
 
     if (readMore !== undefined) {
@@ -164,8 +198,8 @@ app.post('/api/create-page', async (req, res) => {
       }).join('\n') || `<p>${escHtml(readMore || '')}</p>`;
 
       content = content.replace(
-        /(<!-- wp:accordion-panel[\s\S]*?)((?:<!--\s*wp:paragraph[\s\S]*?\/wp:paragraph\s*-->)?\s*<p><\/p>\s*)([\s\S]*?<!-- \/wp:accordion-panel -->)/,
-        `$1\n${paras}\n$3`
+        /(<!-- wp:accordion-panel[\s\S]*?)<!--\s*wp:paragraph[\s\S]*?\/wp:paragraph\s*-->([\s\S]*?<!-- \/wp:accordion-panel -->)/,
+        `$1\n${paras}\n$2`
       );
     }
 
