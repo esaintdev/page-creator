@@ -154,7 +154,8 @@ app.post('/api/create-page', async (req, res) => {
 
     if (readMore !== undefined) {
       const paras = (readMore || '')
-        .split(/\n\s*\n/)
+        .replace(/\r\n/g, '\n')
+        .split(/\n{2,}/)
         .map(p => p.trim()).filter(Boolean)
         .map(p => {
           const text = escHtml(p);
