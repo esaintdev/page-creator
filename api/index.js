@@ -174,7 +174,12 @@ app.post('/api/create-page', async (req, res) => {
       body: JSON.stringify({ title: title || 'New Page', status: status || 'draft', content }),
     }, req);
 
-    if (seo && (seo.focusKeyphrase || seo.metaDescription || seo.seoTitle)) {
+    if (seo && (seo.focusKeyphrase || seo.metaDescription || seo.seoTitle || seo.additionalKeyphrases?.length)) {
+      const kp = {};
+      if (seo.focusKeyphrase) kp.focus = { keyphrase: seo.focusKeyphrase };
+      if (seo.additionalKeyphrases?.length) {
+        kp.additional = seo.additionalKeyphrases.filter(Boolean).map(k => ({ keyphrase: k }));
+      }
       await wpFetch('/aioseo/v1/post', {
         method: 'POST',
         _creds: getCreds(req),
@@ -185,7 +190,7 @@ app.post('/api/create-page', async (req, res) => {
           postType: 'page',
           ...(seo.seoTitle ? { title: seo.seoTitle } : {}),
           ...(seo.metaDescription ? { description: seo.metaDescription } : {}),
-          ...(seo.focusKeyphrase ? { keyphrases: { focus: { keyphrase: seo.focusKeyphrase }, additional: [] } } : {}),
+          ...(Object.keys(kp).length ? { keyphrases: kp } : {}),
         }),
       }, req);
     }

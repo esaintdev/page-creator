@@ -271,6 +271,11 @@ select { cursor: pointer; appearance: none; background-image: url("data:image/sv
     <textarea id="seoDescription" rows="2" placeholder="Brief description for search results&hellip;"></textarea>
     <div class="field-label">SEO Title <span style="color:#555;font-weight:400;text-transform:none">(optional, defaults to page title)</span></div>
     <input type="text" id="seoTitle" placeholder="Leave blank to use page title">
+    <div class="field-label">Additional Keywords <span style="color:#555;font-weight:400;text-transform:none">(2 recommended)</span></div>
+    <div class="inline-group">
+      <input type="text" id="seoAddKp1" placeholder="e.g. London Airport Transfer">
+      <input type="text" id="seoAddKp2" placeholder="e.g. Corporate Travel">
+    </div>
   </div>
 
   <!-- Section 1 -->
@@ -571,6 +576,10 @@ async function createPage() {
           focusKeyphrase: document.getElementById('seoKeyphrase').value || undefined,
           metaDescription: document.getElementById('seoDescription').value || undefined,
           seoTitle: document.getElementById('seoTitle').value || undefined,
+          additionalKeyphrases: [
+            document.getElementById('seoAddKp1').value,
+            document.getElementById('seoAddKp2').value,
+          ].filter(Boolean),
         },
       }),
     });
