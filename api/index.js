@@ -153,21 +153,24 @@ app.post('/api/create-page', async (req, res) => {
     if (sections[2]?.imageUrl) content = replaceImage(content, 2, sections[2].imageUrl, sections[2].imageId);
 
     if (readMore !== undefined) {
-      const paras = (readMore || '')
-        .replace(/\r\n/g, '\n')
-        .split(/\n{2,}/)
-        .map(p => p.trim()).filter(Boolean)
-        .map(p => {
-          const text = escHtml(p);
-          const isHeading = p.length < 100 && !/[.!:]$/.test(p.trim());
-          return `<!-- wp:paragraph -->\n<p>${isHeading ? `<strong>${text}</strong>` : text}</p>\n<!-- /wp:paragraph -->`;
-        })
-        .join('\n') || `<p>${escHtml(readMore || '')}</p>`;
+      const raw = (readMore || '').replace(/\r\n/g, '\n').trim();
+      const blocks = raw.includes('\n\n')
+        ? raw.split(/\n{2,}/).map(p => p.trim()).filter(Boolean)
+        : raw.split('\n').map(l => l.trim()).filter(Boolean);
+      const paras = blocks.map(p => {
+        const text = escHtml(p);
+        const isHeading = p.length < 100 && !/[.!:]$/.test(p.trim());
+        return `<!-- wp:paragraph -->\n<p>${isHeading ? `<strong>${text}</strong>` : text}</p>\n<!-- /wp:paragraph -->`;
+      }).join('\n') || `<p>${escHtml(readMore || '')}</p>`;
 
       content = content.replace(
         /(<!-- wp:accordion-panel[\s\S]*?)((?:<!--\s*wp:paragraph[\s\S]*?\/wp:paragraph\s*-->)?\s*<p><\/p>\s*)([\s\S]*?<!-- \/wp:accordion-panel -->)/,
         `$1\n${paras}\n$3`
       );
+    }
+
+    if (seo?.metaDescription) {
+      content = content.replace(/alt=""/g, `alt="${escHtml(seo.metaDescription)}"`);
     }
 
     const pageData = await wpFetch('/wp/v2/pages', {
