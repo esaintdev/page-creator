@@ -1,5 +1,7 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
+const mammoth = require('mammoth');
 
 const app = express();
 app.use(express.json({ limit: '10mb' }));
@@ -248,6 +250,274 @@ app.post('/api/create-page', async (req, res) => {
     }
 
     res.json({ success: true, id: pageData.id, link: pageData.link, title: pageData.title?.rendered, status: pageData.status });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ── Batch import from .docx files ──
+function parseDocxLines(lines) {
+  const nonEmpty = lines.filter(Boolean);
+  const result = { additionalKeyphrases: [] };
+  let bodyIdx = 0;
+
+  for (let i = 0; i < nonEmpty.length; i++) {
+    const line = nonEmpty[i];
+    const lower = line.toLowerCase();
+
+    if (lower.startsWith('page title:')) {
+      const val = line.substring(line.indexOf(':') + 1).trim();
+      result.title = val || (i + 1 < nonEmpty.length ? nonEmpty[++i] : '');
+    } else if (lower.startsWith('focus keyword:')) {
+      const val = line.substring(line.indexOf(':') + 1).trim();
+      result.focusKeyphrase = val || (i + 1 < nonEmpty.length ? nonEmpty[++i] : '');
+    } else if (lower.startsWith('additional keyword:')) {
+      const val = line.substring(line.indexOf(':') + 1).trim();
+      const kw = val || (i + 1 < nonEmpty.length ? nonEmpty[++i] : '');
+      if (kw) result.additionalKeyphrases.push(kw);
+    } else if (lower.startsWith('meta description:')) {
+      const val = line.substring(line.indexOf(':') + 1).trim();
+      result.metaDescription = val || (i + 1 < nonEmpty.length ? nonEmpty[++i] : '');
+      bodyIdx = i + 1;
+      break;
+    }
+  }
+
+  const body = nonEmpty.slice(bodyIdx);
+  const groups = [];
+  let current = null;
+
+  for (const line of body) {
+    const isH = line.length < 100 && !/[.!:]$/.test(line.trim());
+    if (isH) {
+      current = { heading: line, paragraphs: [] };
+      groups.push(current);
+    } else if (current) {
+      current.paragraphs.push(line);
+    }
+  }
+
+  result.sections = groups.slice(0, 3).map(g => ({
+    heading: g.heading,
+    paragraph: g.paragraphs.join(' '),
+  }));
+
+  result.readMore = groups.slice(3).map(g =>
+    [g.heading, ...g.paragraphs].join('\n\n')
+  ).join('\n\n');
+
+  return result;
+}
+
+app.post('/api/batch-import', async (req, res) => {
+  try {
+    const docsDir = path.join(__dirname, '..', 'documents');
+    const processedDir = path.join(docsDir, 'processed');
+
+    const files = fs.readdirSync(docsDir).filter(f => f.endsWith('.docx'));
+    if (!files.length) return res.json({ success: true, pages: [], message: 'No .docx files found' });
+
+    const results = [];
+
+    for (const [idx, file] of files.entries()) {
+      if (idx > 0) await new Promise(r => setTimeout(r, 200));
+      const filePath = path.join(docsDir, file);
+      const { value: text } = await mammoth.extractRawText({ path: filePath });
+      const parsed = parseDocxLines(text.split('\n').map(l => l.trim()));
+
+      if (!parsed.title) continue;
+
+      const pattern = await wpFetch(`/wp/v2/blocks/${PATTERN_ID}?_fields=id,title,content`, {}, req);
+      let content = pattern.content?.raw || '';
+
+      if (parsed.sections[0]?.heading) {
+        content = content.replace(
+          '<h3 class="wp-block-heading has-text-align-left"></h3>',
+          `<h3 class="wp-block-heading has-text-align-left">${escHtml(parsed.sections[0].heading)}</h3>`
+        );
+      }
+      if (parsed.sections[0]?.paragraph) {
+        content = content.replace(
+          '<!-- wp:paragraph -->\n<p></p>\n<!-- /wp:paragraph -->',
+          paraBlocks(parsed.sections[0].paragraph)
+        );
+      }
+
+      if (parsed.sections[1]?.heading) content = content.replace('Highlight and paste your subheading', escHtml(parsed.sections[1].heading));
+      if (parsed.sections[1]?.paragraph) {
+        content = content.replace(
+          '<!-- wp:paragraph -->\n<p>Highlight and paste your paragraph</p>\n<!-- /wp:paragraph -->',
+          paraBlocks(parsed.sections[1].paragraph)
+        );
+      }
+
+      if (parsed.sections[2]?.heading) content = content.replace('Highlight and paste your subheading', escHtml(parsed.sections[2].heading));
+      if (parsed.sections[2]?.paragraph) {
+        content = content.replace(
+          '<!-- wp:paragraph -->\n<p>Highlight and paste your paragraph</p>\n<!-- /wp:paragraph -->',
+          paraBlocks(parsed.sections[2].paragraph)
+        );
+      }
+
+      if (parsed.readMore) {
+        const raw = parsed.readMore.replace(/\r\n/g, '\n').trim();
+        const blocks = raw.includes('\n\n')
+          ? raw.split(/\n{2,}/).map(p => p.trim()).filter(Boolean)
+          : raw.split('\n').map(l => l.trim()).filter(Boolean);
+        const paras = blocks.map(p => {
+          const text = autoLink(escHtml(p));
+          const isHeading = p.length < 100 && !/[.!:]$/.test(p.trim());
+          return `<!-- wp:paragraph -->\n<p>${isHeading ? `<strong>${text}</strong>` : text}</p>\n<!-- /wp:paragraph -->`;
+        }).join('\n');
+
+        content = content.replace(
+          /(<!-- wp:accordion-panel[\s\S]*?)<!--\s*wp:paragraph[\s\S]*?\/wp:paragraph\s*-->([\s\S]*?<!-- \/wp:accordion-panel -->)/,
+          `$1\n${paras}\n$2`
+        );
+      }
+
+      if (parsed.metaDescription) {
+        content = content.replace(/alt=""/g, `alt="${escHtml(parsed.metaDescription)}"`);
+      }
+
+      const pageData = await wpFetch('/wp/v2/pages', {
+        method: 'POST',
+        body: JSON.stringify({ title: parsed.title, status: 'publish', content }),
+      }, req);
+
+      if (parsed.focusKeyphrase || parsed.metaDescription || parsed.additionalKeyphrases?.length) {
+        const kp = {};
+        if (parsed.focusKeyphrase) kp.focus = { keyphrase: parsed.focusKeyphrase };
+        if (parsed.additionalKeyphrases?.length) {
+          kp.additional = parsed.additionalKeyphrases.filter(Boolean).map(k => ({ keyphrase: k }));
+        }
+        await wpFetch('/aioseo/v1/post', {
+          method: 'POST',
+          _creds: getCreds(req),
+          body: JSON.stringify({
+            id: pageData.id,
+            postId: String(pageData.id),
+            post_type: 'page',
+            postType: 'page',
+            ...(parsed.metaDescription ? { description: parsed.metaDescription } : {}),
+            ...(Object.keys(kp).length ? { keyphrases: kp } : {}),
+          }),
+        }, req);
+      }
+
+      fs.renameSync(filePath, path.join(processedDir, file));
+      results.push({ id: pageData.id, title: parsed.title, link: pageData.link });
+    }
+
+    res.json({ success: true, pages: results });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ── Get page (for editing) ──
+app.get('/api/get-page/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const page = await wpFetch(`/wp/v2/pages/${id}?context=edit&_fields=id,title,content`, {}, req);
+    const seo = await wpFetch(`/wp/v2/pages/${id}?_fields=aioseo_meta_data`, {}, req);
+
+    const raw = page.content?.raw || '';
+    const kp = (seo.aioseo_meta_data?.keyphrases) || {};
+
+    // Extract image URLs from content
+    const imgUrls = [];
+    const imgRe = /src="([^"]+)"/g;
+    let m;
+    while ((m = imgRe.exec(raw)) !== null) {
+      if (!imgUrls.includes(m[1])) imgUrls.push(m[1]);
+    }
+
+    res.json({
+      success: true,
+      id: page.id,
+      title: page.title?.raw || page.title?.rendered || '',
+      images: imgUrls.slice(0, 3),
+      seo: {
+        title: seo.aioseo_meta_data?.title || '',
+        description: seo.aioseo_meta_data?.description || '',
+        focusKeyphrase: (kp.focus || {}).keyphrase || '',
+        additionalKeyphrases: (kp.additional || []).map(a => a.keyphrase),
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ── Update page (images, title, SEO) ──
+app.post('/api/update-page', async (req, res) => {
+  try {
+    const { pageId, title, sections, seo } = req.body;
+    if (!pageId) return res.status(400).json({ success: false, error: 'pageId required' });
+
+    // Fetch current content
+    const page = await wpFetch(`/wp/v2/pages/${pageId}?context=edit&_fields=id,title,content`, {}, req);
+    let content = page.content?.raw || '';
+    let newTitle = page.title?.raw || page.title?.rendered || '';
+    if (title) newTitle = title;
+
+    // Replace images by scanning current image URLs in order
+    const imgUrls = [];
+    const imgRe = /src="([^"]+)"/g;
+    let m;
+    while ((m = imgRe.exec(content)) !== null) {
+      if (!imgUrls.includes(m[1])) imgUrls.push(m[1]);
+    }
+
+    for (let i = 0; i < 3; i++) {
+      if (sections?.[i]?.imageUrl && imgUrls[i]) {
+        content = content.replace(imgUrls[i], sections[i].imageUrl);
+        if (sections[i]?.imageId) {
+          // Replace wp-image-XX and id:XX
+          content = content.replace(
+            /wp-image-\d+/,
+            `wp-image-${sections[i].imageId}`
+          );
+          content = content.replace(
+            /"id":\d+/,
+            `"id":${sections[i].imageId}`
+          );
+        }
+      }
+    }
+
+    // Update the page
+    const updateBody = { content };
+    if (title) updateBody.title = title;
+    await wpFetch(`/wp/v2/pages/${pageId}`, {
+      method: 'POST',
+      body: JSON.stringify(updateBody),
+    }, req);
+
+    // Update AIOSEO
+    if (seo && (seo.focusKeyphrase || seo.metaDescription || seo.seoTitle || seo.additionalKeyphrases?.length)) {
+      const kp = {};
+      if (seo.focusKeyphrase) kp.focus = { keyphrase: seo.focusKeyphrase };
+      if (seo.additionalKeyphrases?.length) {
+        kp.additional = seo.additionalKeyphrases.filter(Boolean).map(k => ({ keyphrase: k }));
+      }
+      await wpFetch('/aioseo/v1/post', {
+        method: 'POST',
+        _creds: getCreds(req),
+        body: JSON.stringify({
+          id: pageId,
+          postId: String(pageId),
+          post_type: 'page',
+          postType: 'page',
+          ...(seo.seoTitle ? { title: `#post_title #separator_sa ${seo.seoTitle}` } : {}),
+          ...(seo.metaDescription ? { description: seo.metaDescription } : {}),
+          ...(Object.keys(kp).length ? { keyphrases: kp } : {}),
+        }),
+      }, req);
+    }
+
+    res.json({ success: true, id: pageId, title: newTitle });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

@@ -353,6 +353,55 @@ select { cursor: pointer; appearance: none; background-image: url("data:image/sv
 
   </div><!-- /builder-cards -->
 
+  <!-- ─── Batch Import ─── -->
+  <div class="card">
+    <div class="card-header"><span class="num">&#9881;</span> Batch Import <span class="badge">DOCX</span></div>
+    <div class="field-label">Drop .docx files into <code style="color:#ff6b00">documents/</code> folder, then import</div>
+    <div class="form-actions" style="margin-top:8px">
+      <button class="btn btn-primary" id="batchBtn" onclick="batchImport()">&#9654; Import from Documents</button>
+      <span id="batchStatus" style="font-size:12px;color:#666;font-family:JetBrains Mono,monospace"></span>
+    </div>
+    <div id="batchResults" style="margin-top:12px;display:none"></div>
+  </div>
+
+  <!-- ─── Page Editor ─── -->
+  <div class="card">
+    <div class="card-header"><span class="num">&#9998;</span> Page Editor <span class="badge">FIX IMAGES</span></div>
+    <div class="inline-group">
+      <div style="flex:0 0 120px">
+        <div class="field-label">Page ID</div>
+        <input type="text" id="editPageId" placeholder="123">
+      </div>
+      <div style="flex:1">
+        <div class="field-label">&nbsp;</div>
+        <button class="btn btn-secondary" onclick="fetchPage()" style="margin-top:0">&#8635; Fetch</button>
+      </div>
+    </div>
+    <div id="editContent" style="display:none">
+      <div class="field-label">Page Title</div>
+      <input type="text" id="editTitle">
+      <div class="field-label">Section 1 Image</div>
+      <input type="text" id="editImg0" placeholder="Image URL">
+      <div class="field-label">Section 2 Image</div>
+      <input type="text" id="editImg1" placeholder="Image URL">
+      <div class="field-label">Section 3 Image</div>
+      <input type="text" id="editImg2" placeholder="Image URL">
+      <div class="field-label">SEO — Meta Description</div>
+      <textarea id="editMetaDesc" rows="2" placeholder="Meta description&hellip;"></textarea>
+      <div class="field-label">SEO — Focus Keyphrase</div>
+      <input type="text" id="editFocusKp" placeholder="Focus keyphrase">
+      <div class="field-label">SEO — Additional Keywords</div>
+      <div class="inline-group">
+        <input type="text" id="editAddKp1" placeholder="Keyword 1">
+        <input type="text" id="editAddKp2" placeholder="Keyword 2">
+      </div>
+      <div class="form-actions" style="margin-top:16px">
+        <button class="btn btn-primary" id="updateBtn" onclick="updatePage()">&#9654; Update Page</button>
+        <span id="editStatus" style="font-size:12px;color:#666;font-family:JetBrains Mono,monospace"></span>
+      </div>
+    </div>
+  </div>
+
   <div class="footer">Page Builder &mdash; <span>Multi-WordPress</span> &mdash; v2.0</div>
 </div>
 
@@ -597,6 +646,113 @@ async function createPage() {
 
   btn.disabled = false;
   btn.textContent = '\u25B6 Build Page';
+}
+
+// ─── Batch Import ───
+async function batchImport() {
+  const btn = document.getElementById('batchBtn');
+  const status = document.getElementById('batchStatus');
+  const results = document.getElementById('batchResults');
+  btn.disabled = true;
+  status.innerHTML = '<span class="spinner"></span> Importing...';
+  results.style.display = 'none';
+
+  try {
+    const data = await api('/api/batch-import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    if (data.success && data.pages.length) {
+      results.innerHTML = '<div style="color:#4ade80;font-weight:600;margin-bottom:8px">&#10003; Published pages:</div>' +
+        data.pages.map(p => `<div style="padding:6px 0;border-bottom:1px solid #1a1a1a;font-size:13px">
+          <a href="${p.link}" target="_blank" style="color:#ff6b00">${p.id}</a> &mdash; ${p.title}
+        </div>`).join('');
+      results.style.display = 'block';
+      status.innerHTML = `<span style="color:#4ade80">&#10003; ${data.pages.length} page(s) created</span>`;
+    } else {
+      status.innerHTML = `<span style="color:#888">${data.message || 'No pages created'}</span>`;
+    }
+  } catch (err) {
+    status.innerHTML = `<span style="color:#f87171">Error: ${err.message}</span>`;
+  }
+  btn.disabled = false;
+}
+
+// ─── Fetch page for editing ───
+async function fetchPage() {
+  const pid = document.getElementById('editPageId').value.trim();
+  const status = document.getElementById('editStatus');
+  const content = document.getElementById('editContent');
+  if (!pid) { status.textContent = 'Enter a page ID'; return; }
+
+  status.innerHTML = '<span class="spinner"></span> Fetching...';
+  content.style.display = 'none';
+
+  try {
+    const data = await api('/api/get-page/' + pid);
+    if (data.success) {
+      document.getElementById('editTitle').value = data.title || '';
+      document.getElementById('editImg0').value = data.images?.[0] || '';
+      document.getElementById('editImg1').value = data.images?.[1] || '';
+      document.getElementById('editImg2').value = data.images?.[2] || '';
+      document.getElementById('editMetaDesc').value = data.seo?.description || '';
+      document.getElementById('editFocusKp').value = data.seo?.focusKeyphrase || '';
+      document.getElementById('editAddKp1').value = data.seo?.additionalKeyphrases?.[0] || '';
+      document.getElementById('editAddKp2').value = data.seo?.additionalKeyphrases?.[1] || '';
+      content.style.display = 'block';
+      status.innerHTML = '<span style="color:#4ade80">&#10003; Page loaded</span>';
+    } else {
+      status.innerHTML = '<span style="color:#f87171">Error: ' + (data.error || 'Not found') + '</span>';
+    }
+  } catch (err) {
+    status.innerHTML = '<span style="color:#f87171">Error: ' + err.message + '</span>';
+  }
+}
+
+// ─── Update page ───
+async function updatePage() {
+  const btn = document.getElementById('updateBtn');
+  const status = document.getElementById('editStatus');
+  const pid = document.getElementById('editPageId').value.trim();
+  btn.disabled = true;
+  status.innerHTML = '<span class="spinner"></span> Updating...';
+
+  try {
+    const sections = [
+      { imageUrl: document.getElementById('editImg0').value || undefined },
+      { imageUrl: document.getElementById('editImg1').value || undefined },
+      { imageUrl: document.getElementById('editImg2').value || undefined },
+    ];
+
+    const body = { pageId: parseInt(pid) };
+    const title = document.getElementById('editTitle').value.trim();
+    if (title) body.title = title;
+    body.sections = sections;
+
+    const md = document.getElementById('editMetaDesc').value.trim();
+    const fkp = document.getElementById('editFocusKp').value.trim();
+    const ak1 = document.getElementById('editAddKp1').value.trim();
+    const ak2 = document.getElementById('editAddKp2').value.trim();
+    if (md || fkp || ak1 || ak2) {
+      body.seo = {};
+      if (md) body.seo.metaDescription = md;
+      if (fkp) body.seo.focusKeyphrase = fkp;
+      const aks = [ak1, ak2].filter(Boolean);
+      if (aks.length) body.seo.additionalKeyphrases = aks;
+    }
+
+    const data = await api('/api/update-page', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (data.success) {
+      status.innerHTML = '<span style="color:#4ade80">&#10003; Page updated</span>';
+    } else {
+      status.innerHTML = '<span style="color:#f87171">Error: ' + (data.error || 'Update failed') + '</span>';
+    }
+  } catch (err) {
+    status.innerHTML = '<span style="color:#f87171">Error: ' + err.message + '</span>';
+  }
+  btn.disabled = false;
 }
 </script>
 </body>
