@@ -240,7 +240,7 @@ app.post('/api/create-page', async (req, res) => {
           postId: String(pageData.id),
           post_type: 'page',
           postType: 'page',
-          ...(seo.seoTitle ? { title: seo.seoTitle } : {}),
+          ...(seo.seoTitle ? { title: `#post_title #separator_sa ${seo.seoTitle}` } : {}),
           ...(seo.metaDescription ? { description: seo.metaDescription } : {}),
           ...(Object.keys(kp).length ? { keyphrases: kp } : {}),
         }),
