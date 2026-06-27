@@ -68,8 +68,8 @@ const ORIGINAL_IMAGES = [
 ];
 
 const LINK_RULES = [
-  { phrase: 'Why Choose M25 Chauffeurs Ltd?', url: 'https://m25chauffeurs.com/book-now/' },
-  { phrase: 'Book Your Luxury Chauffeur Service with M25 Chauffeurs Ltd.', url: 'https://m25chauffeurs.com/book-now/' },
+  { phrase: 'Why Choose M25 Chauffeurs Ltd', url: 'https://m25chauffeurs.com/book-now/' },
+  { phrase: 'Book Your Luxury Chauffeur Service with M25 Chauffeurs Ltd', url: 'https://m25chauffeurs.com/book-now/' },
 ];
 
 function escHtml(str) {
