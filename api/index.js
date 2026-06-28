@@ -265,6 +265,9 @@ function parseDocxLines(lines) {
     if (lower.startsWith('page title:')) {
       const val = line.substring(line.indexOf(':') + 1).trim();
       result.title = val || (i + 1 < nonEmpty.length ? nonEmpty[++i] : '');
+    } else if (lower.startsWith('seo title:')) {
+      const val = line.substring(line.indexOf(':') + 1).trim();
+      result.seoTitle = val || (i + 1 < nonEmpty.length ? nonEmpty[++i] : '');
     } else if (lower.startsWith('focus keyword:')) {
       const val = line.substring(line.indexOf(':') + 1).trim();
       result.focusKeyphrase = val || (i + 1 < nonEmpty.length ? nonEmpty[++i] : '');
@@ -280,11 +283,23 @@ function parseDocxLines(lines) {
     }
   }
 
+  // If no Page Title label was found, use the first non-label non-empty line as title
+  if (!result.title) {
+    const rest = nonEmpty.slice(bodyIdx);
+    // Skip first body line only if it's a known leftover label
+    const first = rest.find(l => !/^(seo title|focus keyword|additional keyword|meta description):/i.test(l));
+    if (first) result.title = first;
+  }
+
   const body = nonEmpty.slice(bodyIdx);
+  // Remove title line from body if it was inferred (no label)
+  const cleanBody = result.title && !nonEmpty.some(l => l.toLowerCase().startsWith('page title:'))
+    ? body.filter(l => l !== result.title)
+    : body;
   const groups = [];
   let current = null;
 
-  for (const line of body) {
+  for (const line of cleanBody) {
     const isH = line.length < 100 && !/[.!:]$/.test(line.trim());
     if (isH) {
       current = { heading: line, paragraphs: [] };
@@ -483,7 +498,7 @@ app.post('/api/import-docx', async (req, res) => {
       body: JSON.stringify({ title: parsed.title, status: 'publish', content }),
     }, req);
 
-    if (parsed.focusKeyphrase || parsed.metaDescription || parsed.additionalKeyphrases?.length) {
+    if (parsed.focusKeyphrase || parsed.metaDescription || parsed.additionalKeyphrases?.length || parsed.seoTitle) {
       const kp = {};
       if (parsed.focusKeyphrase) kp.focus = { keyphrase: parsed.focusKeyphrase };
       if (parsed.additionalKeyphrases?.length) {
@@ -498,12 +513,31 @@ app.post('/api/import-docx', async (req, res) => {
           post_type: 'page',
           postType: 'page',
           ...(parsed.metaDescription ? { description: parsed.metaDescription } : {}),
+          ...(parsed.seoTitle ? { title: `#post_title #separator_sa ${parsed.seoTitle}` } : {}),
           ...(Object.keys(kp).length ? { keyphrases: kp } : {}),
         }),
       }, req);
     }
 
     res.json({ success: true, id: pageData.id, link: pageData.link, title: parsed.title });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ── Resolve page URL to ID ──
+app.post('/api/resolve-page', async (req, res) => {
+  try {
+    const { url } = req.body;
+    if (!url) return res.status(400).json({ success: false, error: 'url required' });
+
+    const slug = url.replace(/\/+$/, '').split('/').pop().split('?')[0].split('#')[0];
+    if (!slug) return res.status(400).json({ success: false, error: 'Could not extract slug from URL' });
+
+    const pages = await wpFetch(`/wp/v2/pages?slug=${encodeURIComponent(slug)}&_fields=id`, {}, req);
+    if (!pages?.length) return res.status(404).json({ success: false, error: 'Page not found' });
+
+    res.json({ success: true, id: pages[0].id });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
