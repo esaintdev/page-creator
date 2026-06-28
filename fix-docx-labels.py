@@ -111,7 +111,7 @@ for docx_path in sorted(docx_files):
         vehicle = extract_vehicle(section1_heading)
         location = extract_location(section1_heading)
         if vehicle:
-            new_title = f'Luxury Airport Transfer by {vehicle} from {location}' if location else f'Luxury Airport Transfer by {vehicle}'
+            new_title = f'Luxury Airport Transfer from {location} by {vehicle}' if location else f'Luxury Airport Transfer by {vehicle}'
             # Find and update the title value paragraph in the XML
             old_para_xml = title_value_para
             new_para_xml = set_para_text(old_para_xml, new_title)
