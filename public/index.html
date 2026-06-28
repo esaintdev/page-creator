@@ -863,7 +863,7 @@ async function fetchPage() {
       document.getElementById('editImg1').value = data.images?.[1] || '';
       document.getElementById('editImg2').value = data.images?.[2] || '';
       document.getElementById('editMetaDesc').value = data.seo?.description || '';
-      document.getElementById('editSeoTitle').value = (data.seo?.title || '').replace(/^#post_title\s*#separator_sa\s*/i, '');
+      document.getElementById('editSeoTitle').value = (data.seo?.title || '').replace(/^#post_title\s*#separator_sa\s*/i, '') || 'M25 Chauffeurs Ltd';
       document.getElementById('editFocusKp').value = data.seo?.focusKeyphrase || '';
       document.getElementById('editAddKp1').value = data.seo?.additionalKeyphrases?.[0] || '';
       document.getElementById('editAddKp2').value = data.seo?.additionalKeyphrases?.[1] || '';
