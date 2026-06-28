@@ -116,6 +116,49 @@ function replaceImage(html, index, newUrl, newId) {
   return result;
 }
 
+function extractVehicleName(title) {
+  const parts = title.split(/\b(?:with|by|in)\s+/i);
+  return parts.length > 1 ? parts[parts.length - 1].trim() : null;
+}
+
+async function autoMatchVehicleImages(content, vehicleName, req) {
+  if (!vehicleName) return content;
+  try {
+    const results = await wpFetch(`/wp/v2/media?search=${encodeURIComponent(vehicleName)}&per_page=2&_fields=id,source_url`, {}, req);
+    if (!results?.length) return content;
+    const items = results.filter(r => r.source_url);
+    if (!items.length) return content;
+
+    // Extract current image URLs by position
+    const imgUrls = [];
+    const re = /src="([^"]+)"/g;
+    let m;
+    while ((m = re.exec(content)) !== null) imgUrls.push(m[1]);
+
+    // Extract current image IDs by position
+    const ids = [];
+    const idRe = /"id":(\d+)/g;
+    while ((m = idRe.exec(content)) !== null) ids.push(m[1]);
+
+    const first = items[0];
+    const second = items[1] || first;
+
+    // Replace img0 and img2 with first result, img1 with second result
+    if (imgUrls[0]) content = content.replace(imgUrls[0], first.source_url);
+    if (ids[0]) content = content.replace(`"id":${ids[0]}`, `"id":${first.id}`);
+    if (ids[0]) content = content.replace(`wp-image-${ids[0]}`, `wp-image-${first.id}`);
+
+    if (imgUrls[1]) content = content.replace(imgUrls[1], second.source_url);
+    if (ids[1]) content = content.replace(`"id":${ids[1]}`, `"id":${second.id}`);
+    if (ids[1]) content = content.replace(`wp-image-${ids[1]}`, `wp-image-${second.id}`);
+
+    if (imgUrls[2]) content = content.replace(imgUrls[2], first.source_url);
+    if (ids[2]) content = content.replace(`"id":${ids[2]}`, `"id":${first.id}`);
+    if (ids[2]) content = content.replace(`wp-image-${ids[2]}`, `wp-image-${first.id}`);
+  } catch {}
+  return content;
+}
+
 // ── Verify credentials ──
 app.post('/api/verify', async (req, res) => {
   try {
@@ -392,6 +435,12 @@ app.post('/api/batch-import', async (req, res) => {
         content = content.replace(/alt=""/g, `alt="${escHtml(parsed.metaDescription)}"`);
       }
 
+      // Auto-match vehicle images from media library
+      if (parsed.title) {
+        const vehicle = extractVehicleName(parsed.title);
+        if (vehicle) content = await autoMatchVehicleImages(content, vehicle, req);
+      }
+
       const pageData = await wpFetch('/wp/v2/pages', {
         method: 'POST',
         body: JSON.stringify({ title: parsed.title, status: 'publish', content }),
@@ -492,6 +541,12 @@ app.post('/api/import-docx', async (req, res) => {
 
     if (parsed.metaDescription) {
       content = content.replace(/alt=""/g, `alt="${escHtml(parsed.metaDescription)}"`);
+    }
+
+    // Auto-match vehicle images from media library
+    if (parsed.title) {
+      const vehicle = extractVehicleName(parsed.title);
+      if (vehicle) content = await autoMatchVehicleImages(content, vehicle, req);
     }
 
     const pageData = await wpFetch('/wp/v2/pages', {
