@@ -124,10 +124,16 @@ function extractVehicleName(title) {
 async function autoMatchVehicleImages(content, vehicleName, req) {
   if (!vehicleName) return content;
   try {
-    const results = await wpFetch(`/wp/v2/media?search=${encodeURIComponent(vehicleName)}&per_page=2&_fields=id,source_url`, {}, req);
+    const results = await wpFetch(`/wp/v2/media?search=${encodeURIComponent(vehicleName)}&per_page=50&_fields=id,source_url`, {}, req);
     if (!results?.length) return content;
     const items = results.filter(r => r.source_url);
     if (!items.length) return content;
+
+    // Shuffle to get random picks each time
+    for (let i = items.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [items[i], items[j]] = [items[j], items[i]];
+    }
 
     // Extract current image URLs by position
     const imgUrls = [];
