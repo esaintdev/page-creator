@@ -258,6 +258,9 @@ select { cursor: pointer; appearance: none; background-image: url("data:image/sv
       <button class="sidebar-item" onclick="switchTab('editor')">
         <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span> Page Editor
       </button>
+      <button class="sidebar-item" onclick="switchTab('batch-edit')">
+        <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Batch Edit
+      </button>
       <div class="sidebar-divider"></div>
       <div class="sidebar-item" style="cursor:default;color:#444;font-size:11px;text-transform:none;letter-spacing:0">
         <span class="icon" style="font-size:10px;opacity:0.5"><svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor"><circle cx="4" cy="4" r="4"/></svg></span> <span id="connSidebarName" style="font-family:'JetBrains Mono',monospace"></span>
@@ -486,6 +489,44 @@ select { cursor: pointer; appearance: none; background-image: url("data:image/sv
   </div>
   
     </div><!-- /tab-editor -->
+
+    <!-- Tab: Batch Edit -->
+    <div class="tab-content" id="tab-batch-edit">
+<div class="card">
+    <div class="card-header"><span class="num"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Batch Edit <span class="badge">MULTI</span></div>
+    <div class="field-label">Page IDs <span style="color:#555;font-weight:400;text-transform:none">(one per line)</span></div>
+    <textarea id="bePageIds" rows="4" placeholder="46290&#10;46289&#10;46288&#10;Or paste URLs, they&#39;ll be resolved"></textarea>
+    <div style="border-top:1px solid #1a1a1a;margin:16px 0 12px"></div>
+    <div class="field-label">New Title <span style="color:#555;font-weight:400;text-transform:none">(optional — applies to all)</span></div>
+    <input type="text" id="beTitle" placeholder="Leave blank to keep existing titles">
+    <div class="field-label">Section 1 Image</div>
+    <input type="text" id="beImg0" placeholder="Image URL (leave blank to keep current)">
+    <div class="field-label">Section 2 Image</div>
+    <input type="text" id="beImg1" placeholder="Image URL (leave blank to keep current)">
+    <div class="field-label">Section 3 Image</div>
+    <input type="text" id="beImg2" placeholder="Image URL (leave blank to keep current)">
+    <div class="field-label">SEO — Meta Description</div>
+    <textarea id="beMetaDesc" rows="2" placeholder="Leave blank to keep current"></textarea>
+    <div class="field-label">SEO Title</div>
+    <div style="display:flex;align-items:center;gap:6px;margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#666;background:#0d0d0d;border:1px solid #2a2a2a;border-radius:8px;padding:4px 14px">
+      <span style="white-space:nowrap;color:#888">#post_title #separator_sa</span>
+      <input type="text" id="beSeoTitle" placeholder="M25 Chauffeurs Ltd" style="border:none;background:transparent;padding:6px 0;font-size:13px;flex:1;min-width:120px">
+    </div>
+    <div class="field-label">SEO — Focus Keyphrase</div>
+    <input type="text" id="beFocusKp" placeholder="Leave blank to keep current">
+    <div class="field-label">SEO — Additional Keywords</div>
+    <div class="inline-group">
+      <input type="text" id="beAddKp1" placeholder="Keyword 1">
+      <input type="text" id="beAddKp2" placeholder="Keyword 2">
+    </div>
+    <div class="form-actions" style="margin-top:16px">
+      <button class="btn btn-primary" id="batchEditBtn" onclick="batchEdit()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg> Update All</button>
+      <span id="beStatus" style="font-size:12px;color:#666;font-family:JetBrains Mono,monospace"></span>
+    </div>
+    <div id="beResults" style="margin-top:12px;display:none"></div>
+  </div>
+
+    </div><!-- /tab-batch-edit -->
 
     </div><!-- /main-content -->
   </div><!-- /main-wrap -->
@@ -919,6 +960,91 @@ async function updatePage() {
 
     if (data.success) {
       status.innerHTML = '<span style="color:#4ade80"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Page updated</span>';
+    } else {
+      status.innerHTML = '<span style="color:#f87171">Error: ' + (data.error || 'Update failed') + '</span>';
+    }
+  } catch (err) {
+    status.innerHTML = '<span style="color:#f87171">Error: ' + err.message + '</span>';
+  }
+  btn.disabled = false;
+}
+
+// ─── Batch Edit ───
+async function batchEdit() {
+  const btn = document.getElementById('batchEditBtn');
+  const status = document.getElementById('beStatus');
+  const results = document.getElementById('beResults');
+  const raw = document.getElementById('bePageIds').value.trim();
+  if (!raw) { status.textContent = 'Enter page IDs'; return; }
+
+  // Parse IDs — support numbers and URLs
+  const pageIds = [];
+  for (const line of raw.split('\n').map(l => l.trim()).filter(Boolean)) {
+    if (line.includes('/')) {
+      // Try resolving URL
+      try {
+        const resolved = await api('/api/resolve-page', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: line }),
+        });
+        if (resolved.success) { pageIds.push(resolved.id); continue; }
+      } catch {}
+      status.textContent = 'Could not resolve: ' + line;
+      return;
+    }
+    const num = parseInt(line);
+    if (!isNaN(num)) pageIds.push(num);
+  }
+
+  if (!pageIds.length) { status.textContent = 'No valid page IDs'; return; }
+
+  btn.disabled = true;
+  status.innerHTML = '<span class="spinner"></span> Updating ' + pageIds.length + ' page(s)...';
+  results.style.display = 'none';
+
+  try {
+    const sections = [
+      { imageUrl: document.getElementById('beImg0').value || undefined },
+      { imageUrl: document.getElementById('beImg1').value || undefined },
+      { imageUrl: document.getElementById('beImg2').value || undefined },
+    ];
+
+    const body = { pageIds };
+    const title = document.getElementById('beTitle').value.trim();
+    if (title) body.title = title;
+    if (sections.some(s => s.imageUrl)) body.sections = sections;
+
+    const md = document.getElementById('beMetaDesc').value.trim();
+    const st = document.getElementById('beSeoTitle').value.trim();
+    const fkp = document.getElementById('beFocusKp').value.trim();
+    const ak1 = document.getElementById('beAddKp1').value.trim();
+    const ak2 = document.getElementById('beAddKp2').value.trim();
+    if (md || st || fkp || ak1 || ak2) {
+      body.seo = {};
+      if (md) body.seo.metaDescription = md;
+      if (st) body.seo.seoTitle = st;
+      if (fkp) body.seo.focusKeyphrase = fkp;
+      const aks = [ak1, ak2].filter(Boolean);
+      if (aks.length) body.seo.additionalKeyphrases = aks;
+    }
+
+    const data = await api('/api/batch-update', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (data.success) {
+      const ok = data.results.filter(r => r.success);
+      const fail = data.results.filter(r => !r.success);
+      let html = '<div style="color:#4ade80;font-weight:600;margin-bottom:8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> ' + ok.length + '/' + data.results.length + ' updated</div>';
+      if (fail.length) {
+        html += '<div style="color:#f87171;font-size:12px;margin-bottom:8px">' + fail.length + ' failed:</div>';
+        html += fail.map(r => '<div style="padding:4px 0;font-size:12px;color:#f87171">#' + r.id + ': ' + (r.error || 'unknown') + '</div>').join('');
+      }
+      html += ok.map(r => '<div style="padding:6px 0;border-bottom:1px solid #1a1a1a;font-size:13px;color:#4ade80">#' + r.id + ' &check;</div>').join('');
+      results.innerHTML = html;
+      results.style.display = 'block';
+      status.innerHTML = '<span style="color:#4ade80"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Done</span>';
     } else {
       status.innerHTML = '<span style="color:#f87171">Error: ' + (data.error || 'Update failed') + '</span>';
     }
