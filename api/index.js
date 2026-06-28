@@ -397,7 +397,7 @@ app.post('/api/batch-import', async (req, res) => {
         body: JSON.stringify({ title: parsed.title, status: 'publish', content }),
       }, req);
 
-      if (parsed.focusKeyphrase || parsed.metaDescription || parsed.additionalKeyphrases?.length) {
+      if (parsed.focusKeyphrase || parsed.metaDescription || parsed.additionalKeyphrases?.length || parsed.seoTitle) {
         const kp = {};
         if (parsed.focusKeyphrase) kp.focus = { keyphrase: parsed.focusKeyphrase };
         if (parsed.additionalKeyphrases?.length) {
@@ -412,6 +412,7 @@ app.post('/api/batch-import', async (req, res) => {
             post_type: 'page',
             postType: 'page',
             ...(parsed.metaDescription ? { description: parsed.metaDescription } : {}),
+            ...(parsed.seoTitle ? { title: `#post_title #separator_sa ${parsed.seoTitle}` } : {}),
             ...(Object.keys(kp).length ? { keyphrases: kp } : {}),
           }),
         }, req);
@@ -553,19 +554,19 @@ app.get('/api/get-page/:id', async (req, res) => {
     const raw = page.content?.raw || '';
     const kp = (seo.aioseo_meta_data?.keyphrases) || {};
 
-    // Extract image URLs from content
+    // Extract image URLs from content (by position, allow duplicates)
     const imgUrls = [];
     const imgRe = /src="([^"]+)"/g;
     let m;
     while ((m = imgRe.exec(raw)) !== null) {
-      if (!imgUrls.includes(m[1])) imgUrls.push(m[1]);
+      imgUrls.push(m[1]);
     }
 
     res.json({
       success: true,
       id: page.id,
       title: page.title?.raw || page.title?.rendered || '',
-      images: imgUrls.slice(0, 3),
+      images: imgUrls,
       seo: {
         title: seo.aioseo_meta_data?.title || '',
         description: seo.aioseo_meta_data?.description || '',
@@ -590,12 +591,12 @@ app.post('/api/update-page', async (req, res) => {
     let newTitle = page.title?.raw || page.title?.rendered || '';
     if (title) newTitle = title;
 
-    // Replace images by scanning current image URLs in order
+    // Replace images by scanning current image URLs in order (allow duplicates)
     const imgUrls = [];
     const imgRe = /src="([^"]+)"/g;
     let m;
     while ((m = imgRe.exec(content)) !== null) {
-      if (!imgUrls.includes(m[1])) imgUrls.push(m[1]);
+      imgUrls.push(m[1]);
     }
 
     for (let i = 0; i < 3; i++) {
