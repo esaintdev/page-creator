@@ -467,7 +467,7 @@ app.post('/api/batch-import', async (req, res) => {
             post_type: 'page',
             postType: 'page',
             ...(parsed.metaDescription ? { description: parsed.metaDescription } : {}),
-            { title: `#post_title #separator_sa ${parsed.seoTitle || 'M25 Chauffeurs Ltd'}` },
+            title: `#post_title #separator_sa ${parsed.seoTitle || 'M25 Chauffeurs Ltd'}`,
             ...(Object.keys(kp).length ? { keyphrases: kp } : {}),
           }),
         }, req);
@@ -575,7 +575,7 @@ app.post('/api/import-docx', async (req, res) => {
           post_type: 'page',
           postType: 'page',
           ...(parsed.metaDescription ? { description: parsed.metaDescription } : {}),
-          { title: `#post_title #separator_sa ${parsed.seoTitle || 'M25 Chauffeurs Ltd'}` },
+          title: `#post_title #separator_sa ${parsed.seoTitle || 'M25 Chauffeurs Ltd'}`,
           ...(Object.keys(kp).length ? { keyphrases: kp } : {}),
         }),
       }, req);

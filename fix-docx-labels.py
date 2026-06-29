@@ -2,6 +2,8 @@ import zipfile, io, re, os, glob
 
 KEYWORDS = ['Airport', 'Chauffeur', 'Service', 'Transfer', 'Pickup', 'Hire', 'Travel', 'Journey', 'Luxury']
 KW_PATTERN = re.compile(r'\b(?:' + '|'.join(KEYWORDS) + r')\b')
+KNOWN_PREFIXES = ['Luxury', 'Luxurious', 'Premier', 'Executive', 'Exclusive', 'Premium', 'Professional', 'Ultimate']
+PREFIX_RE = re.compile(r'^(?:' + '|'.join(KNOWN_PREFIXES) + r')\s+', re.I)
 
 def get_para_texts(xml):
     """Return list of (full_text, para_xml) for each paragraph."""
@@ -17,17 +19,34 @@ def set_para_text(para_xml, new_text):
     return re.sub(r'(<w:t[^>]*>)(.*?)(</w:t>)', lambda m: m.group(1) + new_text + m.group(3), para_xml, count=1)
 
 def extract_vehicle(heading):
-    """Extract vehicle name: text before first keyword."""
-    m = KW_PATTERN.search(heading)
-    if m:
-        return heading[:m.start()].strip()
-    return heading.strip()
+    """Extract vehicle name: strip known prefixes, take text before first keyword."""
+    cleaned = PREFIX_RE.sub('', heading)
+    m = KW_PATTERN.search(cleaned)
+    if not m:
+        return cleaned.strip()
+    vehicle = cleaned[:m.start()].strip()
+    # If nothing remains, try extracting after location and before next keyword
+    if not vehicle:
+        loc_m = re.search(r'\b(?:from|to)\s+(.+?)\b', heading, re.I)
+        if loc_m:
+            after_loc = heading[loc_m.end():].strip()
+            kw_m = KW_PATTERN.search(after_loc)
+            if kw_m:
+                vehicle = after_loc[:kw_m.start()].strip()
+            else:
+                vehicle = after_loc
+    return vehicle
 
 def extract_location(heading):
-    """Extract location: text after 'from' or 'to'."""
-    m = re.search(r'\b(?:from|to)\b', heading, re.I)
+    """Extract location: text after 'from' or 'to', before next keyword."""
+    m = re.search(r'\b(?:from|to)\s+(.+?)\b', heading, re.I)
     if m:
-        return heading[m.end():].strip()
+        loc = m.group(1).strip()
+        # Trim at next keyword if present
+        kw_m = KW_PATTERN.search(loc)
+        if kw_m:
+            loc = loc[:kw_m.start()].strip()
+        return loc
     return ''
 
 docs_dir = os.path.join(os.path.dirname(__file__), 'documents')
@@ -75,19 +94,20 @@ for docx_path in sorted(docx_files):
         if 'Removed empty Additional Keyword' in changes:
             break
 
-    # ── 3. Rewrite page title ──
+    # ── 3. Rewrite page title (only if title lacks with/by/in) ──
     para_info = get_para_texts(xml)
 
-    # Find Page Title: label and its value paragraph
+    # Find Page Title: label, its value paragraph, and current title text
     title_label_idx = None
     title_value_para = None
+    current_title = ''
     for i, (txt, p) in enumerate(para_info):
         if txt == 'Page Title:':
             title_label_idx = i
-            # Value is in the next non-blank paragraph
             for j in range(i+1, len(para_info)):
                 if para_info[j][0]:
                     title_value_para = para_info[j][1]
+                    current_title = para_info[j][0]
                     break
             break
 
@@ -107,7 +127,9 @@ for docx_path in sorted(docx_files):
                 section1_heading = txt
                 break
 
-    if section1_heading and title_value_para:
+    # Only rewrite if title doesn't already have with|by|in
+    title_has_prep = bool(re.search(r'\b(?:with|by|in)\b', current_title, re.I))
+    if not title_has_prep and section1_heading and title_value_para:
         vehicle = extract_vehicle(section1_heading)
         location = extract_location(section1_heading)
         if vehicle:
