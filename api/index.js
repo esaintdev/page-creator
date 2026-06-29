@@ -311,22 +311,25 @@ function parseDocxLines(lines) {
     const line = nonEmpty[i];
     const lower = line.toLowerCase();
 
+    const isLabel = l => /^(page title|seo title|focus keyword|additional keyword|meta description|meta seo description):/i.test(l);
+    const nextIsLabel = () => i + 1 < nonEmpty.length && isLabel(nonEmpty[i + 1]);
+
     if (lower.startsWith('page title:')) {
       const val = line.substring(line.indexOf(':') + 1).trim();
-      result.title = val || (i + 1 < nonEmpty.length ? nonEmpty[++i] : '');
+      result.title = val || (!nextIsLabel() && i + 1 < nonEmpty.length ? nonEmpty[++i] : '');
     } else if (lower.startsWith('seo title:')) {
       const val = line.substring(line.indexOf(':') + 1).trim();
-      result.seoTitle = val || (i + 1 < nonEmpty.length ? nonEmpty[++i] : '');
+      result.seoTitle = val || (!nextIsLabel() && i + 1 < nonEmpty.length ? nonEmpty[++i] : '');
     } else if (lower.startsWith('focus keyword:')) {
       const val = line.substring(line.indexOf(':') + 1).trim();
-      result.focusKeyphrase = val || (i + 1 < nonEmpty.length ? nonEmpty[++i] : '');
+      result.focusKeyphrase = val || (!nextIsLabel() && i + 1 < nonEmpty.length ? nonEmpty[++i] : '');
     } else if (lower.startsWith('additional keyword:')) {
       const val = line.substring(line.indexOf(':') + 1).trim();
-      const kw = val || (i + 1 < nonEmpty.length ? nonEmpty[++i] : '');
+      const kw = val || (!nextIsLabel() && i + 1 < nonEmpty.length ? nonEmpty[++i] : '');
       if (kw) result.additionalKeyphrases.push(kw);
-    } else if (lower.startsWith('meta description:')) {
+    } else if (lower.startsWith('meta description:') || lower.startsWith('meta seo description:')) {
       const val = line.substring(line.indexOf(':') + 1).trim();
-      result.metaDescription = val || (i + 1 < nonEmpty.length ? nonEmpty[++i] : '');
+      result.metaDescription = val || (!nextIsLabel() && i + 1 < nonEmpty.length ? nonEmpty[++i] : '');
       bodyIdx = i + 1;
       break;
     }
@@ -336,7 +339,7 @@ function parseDocxLines(lines) {
   if (!result.title) {
     const rest = nonEmpty.slice(bodyIdx);
     // Skip first body line only if it's a known leftover label
-    const first = rest.find(l => !/^(seo title|focus keyword|additional keyword|meta description):/i.test(l));
+    const first = rest.find(l => !/^(seo title|focus keyword|additional keyword|meta description|meta seo description):/i.test(l));
     if (first) result.title = first;
   }
 
